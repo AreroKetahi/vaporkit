@@ -1,332 +1,243 @@
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftSyntaxMacrosTestSupport
-import XCTest
+import Testing
+import MacroTesting
 
-final class ValidatableMacroDiagnosticTests: XCTestCase {
-    func testValidatableModelRequiresStructOrClass() throws {
+@Suite(.macros(testMacros))
+struct ValidatableMacroDiagnosticTests {
+    @Test func validatableModelRequiresStructOrClass() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             enum CreateUser {
                 case ready
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
+            ┬────────────────
+            ╰─ 🛑 @ValidatableModel can only be attached to a struct or class.
             enum CreateUser {
                 case ready
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@ValidatableModel can only be attached to a struct or class.",
-                    line: 1,
-                    column: 1
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        try Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testConstraintRequiresExplicitType() throws {
+    @Test func constraintRequiresExplicitType() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(.email)
                 var email = ""
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(.email)
+                ╰─ 🛑 @Constraint properties must declare an explicit type.
                 var email = ""
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint properties must declare an explicit type.",
-                    line: 3,
-                    column: 5
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        try Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testConstraintRequiresStoredProperty() throws {
+    @Test func constraintRequiresStoredProperty() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(.email)
                 var email: String { "value" }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(.email)
+                ╰─ 🛑 @Constraint can only be applied to a stored property.
                 var email: String { "value" }
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint can only be applied to a stored property.",
-                    line: 3,
-                    column: 5
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testConstraintRequiresSingleBinding() throws {
+    @Test func constraintRequiresSingleBinding() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(.email)
                 var primary, secondary: String
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(.email)
+                ┬──────────────────
+                ├─ 🛑 peer macro can only be applied to a single variable
+                ╰─ 🛑 @Constraint properties must declare exactly one stored property.
                 var primary, secondary: String
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "peer macro can only be applied to a single variable",
-                    line: 3,
-                    column: 5
-                ),
-                DiagnosticSpec(
-                    message: "@Constraint properties must declare exactly one stored property.",
-                    line: 3,
-                    column: 5
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testConstraintRequiresRule() throws {
+    @Test func constraintRequiresRule() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint()
                 var email: String
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint()
+                ┬────────────
+                ╰─ 🛑 @Constraint requires a validation rule as its first argument.
                 var email: String
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint requires a validation rule as its first argument.",
-                    line: 3,
-                    column: 5
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testConstraintMessageMustBeLiteral() throws {
+    @Test func constraintMessageMustBeLiteral() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(.email, message: reason)
                 var email: String
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(.email, message: reason)
+                                             ┬─────
+                                             ╰─ 🛑 @Constraint message must be a string literal or nil.
                 var email: String
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint message must be a string literal or nil.",
-                    line: 3,
-                    column: 34
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsExistingValidationsMethod() throws {
+    @Test func rejectsExistingValidationsMethod() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 static func validations(_ validations: inout Vapor.Validations) {}
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
                 static func validations(_ validations: inout Vapor.Validations) {}
+                ┬─────────────────────────────────────────────────────────────────
+                ╰─ 🛑 @ValidatableModel cannot be applied to a type that already declares static func validations(_:).
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@ValidatableModel cannot be applied to a type that already declares static func validations(_:).",
-                    line: 3,
-                    column: 5
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsRuleThatDoesNotMatchPropertyType() throws {
+    @Test func rejectsRuleThatDoesNotMatchPropertyType() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(.email)
                 var age: Int
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(.email)
+                            ┬─────
+                            ╰─ 🛑 @Constraint rule is not supported for this property type.
                 var age: Int
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint rule is not supported for this property type.",
-                    line: 3,
-                    column: 17
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsUnknownRule() throws {
+    @Test func rejectsUnknownRule() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(.totallyMadeUp)
                 var email: String
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(.totallyMadeUp)
+                            ┬─────────────
+                            ╰─ 🛑 @Constraint rule is not supported for this property type.
                 var email: String
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint rule is not supported for this property type.",
-                    line: 3,
-                    column: 17
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsCustomConstraintTypeMismatch() throws {
+    @Test func rejectsCustomConstraintTypeMismatch() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
@@ -335,72 +246,54 @@ final class ValidatableMacroDiagnosticTests: XCTestCase {
                 })
                 var age: Int
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(validating: String.self, with: { value in
+                                        ┬──────────
+                                        ╰─ 🛑 @Constraint(validating:with:) type must match the property type.
+                    !value.isEmpty
+                })
                 var age: Int
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint(validating:with:) type must match the property type.",
-                    line: 3,
-                    column: 29
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsCustomConstraintWithoutClosure() throws {
+    @Test func rejectsCustomConstraintWithoutClosure() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(validating: String.self)
                 var slug: String
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(validating: String.self)
+                ┬───────────────────────────────────
+                ╰─ 🛑 @Constraint(validating:with:) requires a closure passed with the 'with' argument.
                 var slug: String
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint(validating:with:) requires a closure passed with the 'with' argument.",
-                    line: 3,
-                    column: 5
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsCustomConstraintWithNonLiteralMessage() throws {
+    @Test func rejectsCustomConstraintWithNonLiteralMessage() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
@@ -409,28 +302,20 @@ final class ValidatableMacroDiagnosticTests: XCTestCase {
                 })
                 var slug: String
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
             struct CreateUser {
+                @Constraint(validating: String.self, message: reason, with: { value in
+                                                              ┬─────
+                                                              ╰─ 🛑 @Constraint message must be a string literal or nil.
+                    !value.isEmpty
+                })
                 var slug: String
-
-                static func validations(_ validations: inout Vapor.Validations) {
-
-                }
             }
-
-            extension CreateUser: Vapor.Validatable {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "@Constraint message must be a string literal or nil.",
-                    line: 3,
-                    column: 51
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif

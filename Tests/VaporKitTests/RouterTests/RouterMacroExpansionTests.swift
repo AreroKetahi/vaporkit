@@ -1,13 +1,99 @@
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftSyntaxMacrosTestSupport
+import MacroTesting
 import XCTest
 
 final class RouterMacroExpansionTests: XCTestCase {
+    override func invokeTest() {
+        #if canImport(VaporKitMacros)
+        withMacroTesting(macros: testMacros) {
+            super.invokeTest()
+        }
+        #else
+        super.invokeTest()
+        #endif
+    }
+
+    func testAutoRegisterableRouterEmitsRuntimeRecord() throws {
+        #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @AutoRegisterable
+            @Router("api")
+            struct MyRoute {
+                #Get("test") { req in
+                    "ok"
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "api", "test", use: ___macro_local_12RouteHandlerfMu_)
+                }
+
+                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                        "ok"
+                }
+
+                private nonisolated static func __macro_local_19MakeRouteCollectionfMu_() -> any Vapor.RouteCollection {
+                    MyRoute()
+                }
+
+                private nonisolated static func __macro_local_21RouteRegisterAccessorfMu_(
+                    _ outValue: UnsafeMutableRawPointer,
+                    _ type: UnsafeRawPointer,
+                    _ hint: UnsafeRawPointer?,
+                    _ reserved: UInt
+                ) -> CBool {
+                    guard type.load(as: Any.Type.self) == VaporKit._RouteDescriptor.self else {
+                        return false
+                    }
+
+                    outValue.initializeMemory(
+                        as: VaporKit._RouteDescriptor.self,
+                        to: VaporKit._RouteDescriptor(
+                            id: "MyRoute",
+                            routerName: "MyRoute",
+                            makeCollection: __macro_local_19MakeRouteCollectionfMu_
+                        )
+                    )
+
+                    return true
+                }
+
+                #if objectFormat(MachO)
+                @section("__DATA,__swift5_vkrt")
+                #elseif objectFormat(ELF)
+                @section("swift5_tests")
+                #elseif objectFormat(COFF)
+                @section(".sw5vkrt")
+                #endif
+                @used
+                private nonisolated static let __macro_local_19RouteRegisterRecordfMu_: VaporKit._RouteRegisterRecord = (
+                    VaporKit._RouteDiscovery.kind,
+                    VaporKit._RouteDiscovery.version,
+                    __macro_local_21RouteRegisterAccessorfMu_,
+                    0,
+                    0
+                )
+            }
+
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testRegistersFreestandingRoutes() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api")
             struct MyRoute {
@@ -30,8 +116,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     return result
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -63,9 +150,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -73,7 +159,7 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testRegistersFreestandingRoutesWithEmptyPath() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api")
             struct MyRoute {
@@ -85,8 +171,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     return req.method.string
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -105,9 +192,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -115,7 +201,7 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testRegistersFreestandingRoutesWithMiddleware() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api")
             struct MyRoute {
@@ -124,8 +210,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     req.url.path
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -139,9 +226,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -149,7 +235,7 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testPreservesExplicitFreestandingRouteReturnType() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api")
             struct MyRoute {
@@ -161,8 +247,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     return "created"
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -181,9 +268,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -191,14 +277,15 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testRegistersChildRouteCollectionsUnderRouterPrefix() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api/:tenantID")
             struct MyRoute {
                 #Register(UserRoutes(), AdminRoutes())
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -209,9 +296,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -219,7 +305,7 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testForwardedParametersSatisfyRouteParameterValidation() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("users/:id")
             struct MyRoute {
@@ -231,8 +317,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     return tenantID + ":" + id
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -248,9 +335,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -258,7 +344,7 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testDisablesParameterCheckForRouterAndSingleRoute() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @DisableParameterCheck
             @Router("api")
@@ -267,8 +353,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     try req.parameters.require("missing")
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct RouterDisabledRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -282,11 +369,10 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension RouterDisabledRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
 
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api")
             struct RouteDisabledRoute {
@@ -295,8 +381,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     try req.parameters.require("missing")
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct RouteDisabledRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -310,9 +397,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension RouteDisabledRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -320,7 +406,7 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testRegistersWebSocketRoutes() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api")
             struct MyRoute {
@@ -341,8 +427,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     }
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -369,9 +456,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -379,7 +465,7 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testRewritesWebSocketEventShorthandArguments() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api")
             struct MyRoute {
@@ -395,8 +481,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     }
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -420,9 +507,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -430,7 +516,7 @@ final class RouterMacroExpansionTests: XCTestCase {
 
     func testRewritesShorthandShouldUpgradeRequestToUniqueName() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router("api")
             struct MyRoute {
@@ -442,8 +528,9 @@ final class RouterMacroExpansionTests: XCTestCase {
                     }
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -464,9 +551,8 @@ final class RouterMacroExpansionTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif

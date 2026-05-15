@@ -22,6 +22,7 @@ let testMacros: [String: Macro.Type] = [
     "Register": EmptyMacro.self,
     "ForwardParameters": EmptyMacro.self,
     "DisableParameterCheck": EmptyMacro.self,
+    "AutoRegisterable": EmptyMacro.self,
     "Constraint": EmptyMacro.self,
     "Attribute": EmptyMacro.self,
     "Relationship": EmptyMacro.self,

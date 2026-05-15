@@ -1,13 +1,23 @@
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftSyntaxMacrosTestSupport
+import MacroTesting
 import XCTest
 
 final class RouterMacroDiagnosticTests: XCTestCase {
+    override func invokeTest() {
+        #if canImport(VaporKitMacros)
+        withMacroTesting(macros: testMacros) {
+            super.invokeTest()
+        }
+        #else
+        super.invokeTest()
+        #endif
+    }
+
     func testRequiresTrailingClosure() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -15,28 +25,20 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     return "ok"
                 })
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-
-                }
+                #Get("test", action: { req in
+                ╰─ 🛑 Route macros only support trailing closures.
+                   ✏️ Move closure to trailing closure
+                    return "ok"
+                })
             }
-
-            extension MyRoute: Vapor.RouteCollection {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "Route macros only support trailing closures.",
-                    line: 3,
-                    column: 5,
-                    fixIts: [FixItSpec(message: "Move closure to trailing closure")]
-                )
-            ],
-            macros: testMacros,
-            fixedSource: """
+            """
+        } fixes: {
+            """
             @Router
             struct MyRoute {
                 #Get("test"){ req in
@@ -44,7 +46,23 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                 }
             }
             """
-        )
+        } expansion: {
+            """
+            struct MyRoute {
+
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "test", use: ___macro_local_12RouteHandlerfMu_)
+                }
+
+                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                        return "ok"
+                }
+            }
+
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -52,33 +70,23 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testRejectsClosureReferenceArgument() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
                 #Get("test", action: handler)
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-
-                }
+                #Get("test", action: handler)
+                ┬────────────────────────────
+                ╰─ 🛑 Route macros do not accept closure references as arguments. Use a trailing closure and call the handler explicitly.
             }
-
-            extension MyRoute: Vapor.RouteCollection {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "Route macros do not accept closure references as arguments. Use a trailing closure and call the handler explicitly.",
-                    line: 3,
-                    column: 5
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -86,7 +94,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testRejectsMissingRequiredPathParameterInFreestandingRoute() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -95,32 +103,20 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     return slug
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
-                }
-
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
-                        let slug = try req.parameters.require("slug")
-                        return slug
+                #Get("test/:id") { req in
+                    let slug = try req.parameters.require("slug")
+                                   ┬─────────────────────────────
+                                   ╰─ 🛑 Required path parameter is not declared in this route URL.
+                    return slug
                 }
             }
-
-            extension MyRoute: Vapor.RouteCollection {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "Required path parameter is not declared in this route URL.",
-                    line: 4,
-                    column: 24
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -128,7 +124,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testIgnoresNestedClosureParameterAccess() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -140,8 +136,9 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     return try loader()
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -159,9 +156,8 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -169,7 +165,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testRejectsMissingPathParameterAccessWithoutTry() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -179,38 +175,23 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     return slug ?? nested
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
-                }
-
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
-                        let slug = req.parameters.get("slug")
-                        let nested = wrap(req.parameters.get("nested"))
-                        return slug ?? nested
+                #Get("test/:id") { req in
+                    let slug = req.parameters.get("slug")
+                               ┬─────────────────────────
+                               ╰─ 🛑 Required path parameter is not declared in this route URL.
+                    let nested = wrap(req.parameters.get("nested"))
+                                      ┬───────────────────────────
+                                      ╰─ 🛑 Required path parameter is not declared in this route URL.
+                    return slug ?? nested
                 }
             }
-
-            extension MyRoute: Vapor.RouteCollection {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "Required path parameter is not declared in this route URL.",
-                    line: 4,
-                    column: 20
-                ),
-                DiagnosticSpec(
-                    message: "Required path parameter is not declared in this route URL.",
-                    line: 5,
-                    column: 27
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -218,7 +199,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testIgnoresBypassedParameterAccess() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -227,8 +208,9 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     return slug
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -243,9 +225,8 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -253,7 +234,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testWarnsForDynamicPathParameterAccess() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -263,8 +244,22 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     return id
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
+            struct MyRoute {
+                #Get("test/:id") { req in
+                    let key = "id"
+                    let id = req.parameters.get(key)
+                             ┬──────────────────────
+                             ╰─ ⚠️ Getting a route parameter from a variable is unsafe for static checking. Use a string literal, or wrap the expression in #Bypass to silence this warning.
+                    return id
+                }
+            }
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -280,17 +275,8 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "Getting a route parameter from a variable is unsafe for static checking. Use a string literal, or wrap the expression in #Bypass to silence this warning.",
-                    line: 5,
-                    column: 18,
-                    severity: .warning
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -298,7 +284,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testDowngradesParameterErrorsAndSuppressesWarnings() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @DisableParameterCheck(as: .warning)
             @Router
@@ -310,8 +296,24 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     return dynamic ?? slug
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @DisableParameterCheck(as: .warning)
+            @Router
+            struct MyRoute {
+                #Get("test/:id") { req in
+                    let key = "slug"
+                    let dynamic = req.parameters.get(key)
+                    let slug = try req.parameters.require("slug")
+                                   ┬─────────────────────────────
+                                   ╰─ ⚠️ Required path parameter is not declared in this route URL.
+                    return dynamic ?? slug
+                }
+            }
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -328,17 +330,8 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "Required path parameter is not declared in this route URL.",
-                    line: 7,
-                    column: 24,
-                    severity: .warning
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -346,7 +339,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testBypassWarningModeDowngradesOnlyWrappedErrors() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -357,8 +350,23 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     return dynamic ?? slug
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
+            struct MyRoute {
+                #Get("test/:id") { req in
+                    let key = "slug"
+                    let slug = #Bypass(as: .warning) { try req.parameters.require("slug") }
+                                                           ┬─────────────────────────────
+                                                           ╰─ ⚠️ Required path parameter is not declared in this route URL.
+                    let dynamic = #Bypass(as: .warning) { req.parameters.get(key) }
+                    return dynamic ?? slug
+                }
+            }
+            """
+        } expansion: {
+            """
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
@@ -375,17 +383,8 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
             extension MyRoute: Vapor.RouteCollection {
             }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "Required path parameter is not declared in this route URL.",
-                    line: 5,
-                    column: 48,
-                    severity: .warning
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -393,33 +392,23 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testWebSocketRequiresTrailingClosure() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
                 #WebSocket("chat", action: {})
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-
-                }
+                #WebSocket("chat", action: {})
+                ┬─────────────────────────────
+                ╰─ 🛑 #WebSocket only supports trailing closures.
             }
-
-            extension MyRoute: Vapor.RouteCollection {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "#WebSocket only supports trailing closures.",
-                    line: 3,
-                    column: 5
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -427,7 +416,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testWebSocketRejectsNonEventStatements() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -435,32 +424,19 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     let value = 1
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.webSocket("chat", onUpgrade: ___macro_local_16WebSocketHandlerfMu_)
-                }
-
-                func ___macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
-                    let _ = req
-
+                #WebSocket("chat") {
+                    let value = 1
+                    ┬────────────
+                    ╰─ 🛑 #WebSocket bodies may only contain websocket event macros.
                 }
             }
-
-            extension MyRoute: Vapor.RouteCollection {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "#WebSocket bodies may only contain websocket event macros.",
-                    line: 4,
-                    column: 9
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -468,7 +444,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testWebSocketRejectsInvalidEventSignatures() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -482,37 +458,25 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     }
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.webSocket("chat", onUpgrade: ___macro_local_16WebSocketHandlerfMu_)
-                }
-
-                func ___macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
-                    let _ = req
-
+                #WebSocket("chat") {
+                    #OnText { text in
+                    ╰─ 🛑 #OnText and #OnBinary handlers must accept exactly two parameters.
+                        print(text)
+                    }
+            
+                    #OnClose { ws in
+                    ╰─ 🛑 #OnClose handlers must not declare parameters.
+                        print(ws)
+                    }
                 }
             }
-
-            extension MyRoute: Vapor.RouteCollection {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "#OnText and #OnBinary handlers must accept exactly two parameters.",
-                    line: 4,
-                    column: 9
-                ),
-                DiagnosticSpec(
-                    message: "#OnClose handlers must not declare parameters.",
-                    line: 8,
-                    column: 9
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif
@@ -520,7 +484,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
 
     func testWebSocketRejectsUnexpectedAdditionalTrailingClosureLabel() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @Router
             struct MyRoute {
@@ -532,37 +496,24 @@ final class RouterMacroDiagnosticTests: XCTestCase {
                     }
                 }
             }
-            """,
-            expandedSource: """
+            """
+        } diagnostics: {
+            """
+            @Router
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.webSocket("chat", onUpgrade: ___macro_local_16WebSocketHandlerfMu_)
-                }
-
-                func ___macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
-                    let _ = req
-
+                #WebSocket("chat") {
+                    ["X-Test": "1"]
+                    ┬──────────────
+                    ╰─ 🛑 #WebSocket bodies may only contain websocket event macros.
+                } upgraded: {
+                  ╰─ 🛑 #WebSocket only supports an additional trailing closure labeled didUpgrade:.
+                    #OnClose {
+                        print("closed")
+                    }
                 }
             }
-
-            extension MyRoute: Vapor.RouteCollection {
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "#WebSocket only supports an additional trailing closure labeled didUpgrade:.",
-                    line: 5,
-                    column: 7
-                ),
-                DiagnosticSpec(
-                    message: "#WebSocket bodies may only contain websocket event macros.",
-                    line: 4,
-                    column: 9
-                )
-            ],
-            macros: testMacros
-        )
+            """
+        }
         #else
         throw XCTSkip("macros are only supported when running tests for the host platform")
         #endif

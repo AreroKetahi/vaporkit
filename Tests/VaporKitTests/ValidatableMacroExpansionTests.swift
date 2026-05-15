@@ -1,43 +1,45 @@
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
-import SwiftSyntaxMacrosTestSupport
-import XCTest
+import Testing
+import MacroTesting
 
-final class ValidatableMacroExpansionTests: XCTestCase {
-    func testGeneratesValidationsFromConstraintProperties() throws {
+@Suite(.macros(testMacros))
+struct ValidatableMacroExpansionTests {
+    @Test func generatesValidationsFromConstraintProperties() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(.email)
                 var email: String
-
+            
                 @Constraint(.count(3...), message: "Too short")
                 var nickname: String
-
+            
                 @Constraint(.range(18...))
                 var age: Int?
-
+            
                 @Constraint(.ascii)
                 @Constraint(.count(...32))
                 var handle: String
-
+            
                 @Constraint(validating: String.self, message: "Slug must not be empty", with: { value in
                     !value.isEmpty
                 })
                 var slug: String
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct CreateUser {
                 var email: String
                 var nickname: String
                 var age: Int?
                 var handle: String
                 var slug: String
-
+            
                 static func validations(_ validations: inout Vapor.Validations) {
                     let __macro_local_10validationfMu_: Vapor.Validator<String> = .email
                     validations.add("email", as: String.self, is: __macro_local_10validationfMu_)
@@ -57,44 +59,43 @@ final class ValidatableMacroExpansionTests: XCTestCase {
                     validations.add("slug", as: String.self, is: __macro_local_10validationfMu4_)
                 }
             }
-
+            
             extension CreateUser: Vapor.Validatable {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        try Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testSkipsNilMessageArgument() throws {
+    @Test func skipsNilMessageArgument() throws {
         #if canImport(VaporKitMacros)
-        assertMacroExpansion(
+        assertMacro {
             """
             @ValidatableModel
             struct CreateUser {
                 @Constraint(.email, message: nil)
                 var email: String
             }
-            """,
-            expandedSource: """
+            """
+        } expansion: {
+            """
             struct CreateUser {
                 var email: String
-
+            
                 static func validations(_ validations: inout Vapor.Validations) {
                     let __macro_local_10validationfMu_: Vapor.Validator<String> = .email
                     validations.add("email", as: String.self, is: __macro_local_10validationfMu_)
                 }
             }
-
+            
             extension CreateUser: Vapor.Validatable {
             }
-            """,
-            macros: testMacros
-        )
+            """
+        }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        try Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 }
