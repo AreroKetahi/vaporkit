@@ -251,6 +251,146 @@ final class RouterMacroDiagnosticTests: XCTestCase {
         #endif
     }
 
+    func testWarnsForDynamicPathParameterAccess() throws {
+        #if canImport(VaporKitMacros)
+        assertMacroExpansion(
+            """
+            @Router
+            struct MyRoute {
+                #Get("test/:id") { req in
+                    let key = "id"
+                    let id = req.parameters.get(key)
+                    return id
+                }
+            }
+            """,
+            expandedSource: """
+            struct MyRoute {
+
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
+                }
+
+                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                        let key = "id"
+                        let id = req.parameters.get(key)
+                        return id
+                }
+            }
+
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "Getting a route parameter from a variable is unsafe for static checking. Use a string literal, or wrap the expression in #Bypass to silence this warning.",
+                    line: 5,
+                    column: 18,
+                    severity: .warning
+                )
+            ],
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testDowngradesParameterErrorsAndSuppressesWarnings() throws {
+        #if canImport(VaporKitMacros)
+        assertMacroExpansion(
+            """
+            @DisableParameterCheck(as: .warning)
+            @Router
+            struct MyRoute {
+                #Get("test/:id") { req in
+                    let key = "slug"
+                    let dynamic = req.parameters.get(key)
+                    let slug = try req.parameters.require("slug")
+                    return dynamic ?? slug
+                }
+            }
+            """,
+            expandedSource: """
+            struct MyRoute {
+
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
+                }
+
+                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                        let key = "slug"
+                        let dynamic = req.parameters.get(key)
+                        let slug = try req.parameters.require("slug")
+                        return dynamic ?? slug
+                }
+            }
+
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "Required path parameter is not declared in this route URL.",
+                    line: 7,
+                    column: 24,
+                    severity: .warning
+                )
+            ],
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    func testBypassWarningModeDowngradesOnlyWrappedErrors() throws {
+        #if canImport(VaporKitMacros)
+        assertMacroExpansion(
+            """
+            @Router
+            struct MyRoute {
+                #Get("test/:id") { req in
+                    let key = "slug"
+                    let slug = #Bypass(as: .warning) { try req.parameters.require("slug") }
+                    let dynamic = #Bypass(as: .warning) { req.parameters.get(key) }
+                    return dynamic ?? slug
+                }
+            }
+            """,
+            expandedSource: """
+            struct MyRoute {
+
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
+                }
+
+                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                        let key = "slug"
+                        let slug = try req.parameters.require("slug")
+                        let dynamic = req.parameters.get(key)
+                        return dynamic ?? slug
+                }
+            }
+
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """,
+            diagnostics: [
+                DiagnosticSpec(
+                    message: "Required path parameter is not declared in this route URL.",
+                    line: 5,
+                    column: 48,
+                    severity: .warning
+                )
+            ],
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testWebSocketRequiresTrailingClosure() throws {
         #if canImport(VaporKitMacros)
         assertMacroExpansion(

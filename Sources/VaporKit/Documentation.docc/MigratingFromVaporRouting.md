@@ -1,7 +1,7 @@
 # Migrating Code From Vapor-style Routing
 
-This article will guide you how to migrate your legacy code to beneifit
-from VaporKit.
+This article shows how to migrate existing Vapor route collections to
+VaporKit.
 
 ## Marking Code by Macros
 
@@ -44,7 +44,7 @@ Then based on its HTTP method, add method information.
         ```swift
             // VaporKit
             
-            @RouteHandler(.GET, "name")
+            @RouteHandler("name", method: .GET)
             func getName(req: Request) async throws -> String
         ```
     }
@@ -76,7 +76,7 @@ Now, focusing on `routes()` in legacy code.
   `post(_:use:)`, add routes to their `@RouteHandler`.
 
   ```swift
-  @RouteHandler(.GET, "name", ":id") // or "name/:id"
+  @RouteHandler("name", ":id", method: .GET) // or "name/:id"
   ```
 
 @Row {
@@ -85,7 +85,7 @@ Now, focusing on `routes()` in legacy code.
         // Legacy
         
         struct Controller: RouteCollection {
-            func boot(routes: any RouteBuilder) throws {
+            func boot(routes: any Vapor.RoutesBuilder) throws {
                 let grouped = routes.grouped("route")
                 grouped.get("name", ":id", use: getName)
             }
@@ -102,7 +102,7 @@ Now, focusing on `routes()` in legacy code.
         
         @Router("route")
         struct Controller {
-            @RouteHandler(.GET, "name/:id")
+            @RouteHandler("name/:id", method: .GET)
             func getName(req: Request) async throws -> String {
                 // ...
             }
@@ -116,7 +116,7 @@ Now, focusing on `routes()` in legacy code.
 Replace `routes.webSocket` to `#WebSocket`, and put it into structure 
 body.
 
-Removing closure parameter in `didUpgarde`, and replace `ws.onText` to 
+Removing closure parameter in `didUpgrade`, and replace `ws.onText` to 
 `#OnText`, `ws.onBinary` to `#OnBinary`, `ws.onClose` to `#OnClose`.
 
 @Row {
@@ -125,8 +125,8 @@ Removing closure parameter in `didUpgarde`, and replace `ws.onText` to
         // Legacy
         
         struct Controller: RouteCollection {
-            func boot(routes: any RouteBuilder) throws {
-                routes.webStorm("some", "route", maxFrameSize: .default) { request in
+            func boot(routes: any Vapor.RoutesBuilder) throws {
+                routes.webSocket("some", "route", maxFrameSize: .default) { request in
                     // shouldUpgrade
                 } didUpgrade: { req, ws in
                     ws.onText { ws, string in 
@@ -153,7 +153,7 @@ Removing closure parameter in `didUpgarde`, and replace `ws.onText` to
         struct Controller {
             #WebSocket("some", "route", maxFrameSize: .default) { req in
                 // shouldUpgrade
-            } didUpgarde: {
+            } didUpgrade: {
                 #OnText { ws, string in
                     // ...
                 }
@@ -182,7 +182,7 @@ For instance, a super controller define symbol `name` and `id`.
 ```swift
 @Router
 struct ChildrenController {
-    #ForewardParameters("name", "id")
+    #ForwardParameters("name", "id")
     // ...
 }
 ```

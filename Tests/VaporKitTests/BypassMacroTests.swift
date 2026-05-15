@@ -21,6 +21,22 @@ final class BypassMacroTests: XCTestCase {
         #endif
     }
 
+    func testExpandsWrappedClosureArgument() throws {
+        #if canImport(VaporKitMacros)
+        assertMacroExpansion(
+            """
+            let a = #Bypass({ someValue.createValue() })
+            """,
+            expandedSource: """
+            let a = someValue.createValue()
+            """,
+            macros: testMacros
+        )
+        #else
+        throw XCTSkip("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     func testRejectsMissingTrailingClosure() throws {
         #if canImport(VaporKitMacros)
         assertMacroExpansion(

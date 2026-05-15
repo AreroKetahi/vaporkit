@@ -7,10 +7,12 @@ extension RouterMacro {
     static func validateRequiredParameters(
         in functions: [FunctionMetadata],
         forwardedParameters: Set<String>,
+        override routerOverride: StaticCheckOverride?,
         context: some MacroExpansionContext
     ) {
         for function in functions {
-            guard !function.disablesParameterCheck else {
+            let override = function.parameterCheckOverride ?? routerOverride
+            guard override != .error else {
                 continue
             }
 
@@ -24,6 +26,12 @@ extension RouterMacro {
             diagnoseMissingRequiredParameters(
                 visitor.requiredParameters,
                 availableParameters: availableParameters,
+                override: override,
+                context: context
+            )
+            diagnoseDynamicParameterAccesses(
+                visitor.dynamicParameterAccesses,
+                override: override,
                 context: context
             )
         }
@@ -32,10 +40,12 @@ extension RouterMacro {
     static func validateRequiredParameters(
         in handlerMethods: [HandlerMethodMetadata],
         forwardedParameters: Set<String>,
+        override routerOverride: StaticCheckOverride?,
         context: some MacroExpansionContext
     ) {
         for handlerMethod in handlerMethods {
-            guard !handlerMethod.disablesParameterCheck else {
+            let override = handlerMethod.parameterCheckOverride ?? routerOverride
+            guard override != .error else {
                 continue
             }
 
@@ -54,6 +64,12 @@ extension RouterMacro {
             diagnoseMissingRequiredParameters(
                 visitor.requiredParameters,
                 availableParameters: availableParameters,
+                override: override,
+                context: context
+            )
+            diagnoseDynamicParameterAccesses(
+                visitor.dynamicParameterAccesses,
+                override: override,
                 context: context
             )
         }
@@ -62,15 +78,45 @@ extension RouterMacro {
     static func diagnoseMissingRequiredParameters(
         _ requiredParameters: [RequiredParameterAccess],
         availableParameters: Set<String>,
+        override: StaticCheckOverride?,
         context: some MacroExpansionContext
     ) {
-        for requiredParameter in requiredParameters where !availableParameters.contains(requiredParameter.name) {
+        for requiredParameter in requiredParameters
+            where requiredParameter.name.map({ !availableParameters.contains($0) }) ?? false {
+            let severity: SwiftDiagnostics.DiagnosticSeverity = (requiredParameter.override ?? override) == .warning
+                ? .warning
+                : .error
             // The whole purpose of this check is to turn an assumed runtime contract into a
             // compile-time failure as soon as a route path and handler body drift apart.
             context.diagnose(
                 Diagnostic(
                     node: requiredParameter.syntax,
-                    message: RouteMacroDiagnostic.requiredParameterMissingFromRoute
+                    message: ParameterCheckDiagnostic(
+                        kind: .requiredParameterMissingFromRoute,
+                        severity: severity
+                    )
+                )
+            )
+        }
+    }
+
+    static func diagnoseDynamicParameterAccesses(
+        _ accesses: [Syntax],
+        override: StaticCheckOverride?,
+        context: some MacroExpansionContext
+    ) {
+        guard override != .warning else {
+            return
+        }
+
+        for access in accesses {
+            context.diagnose(
+                Diagnostic(
+                    node: access,
+                    message: ParameterCheckDiagnostic(
+                        kind: .dynamicParameterName,
+                        severity: .warning
+                    )
                 )
             )
         }

@@ -26,15 +26,20 @@ extension BypassMacro: ExpressionMacro {
         of node: some FreestandingMacroExpansionSyntax,
         in context: some MacroExpansionContext
     ) throws -> ExprSyntax {
-        guard let trailingClosure = node.trailingClosure else {
+        let closure = node.trailingClosure ?? node.arguments
+            .first(where: { $0.label == nil })?
+            .expression
+            .as(ClosureExprSyntax.self)
+
+        guard let closure else {
             context.diagnose(
                 Diagnostic(node: Syntax(node), message: BypassDiagnostic.requiresTrailingClosure)
             )
             return "()"
         }
 
-        guard trailingClosure.statements.count == 1,
-              let onlyStatement = trailingClosure.statements.first,
+        guard closure.statements.count == 1,
+              let onlyStatement = closure.statements.first,
               let expression = onlyStatement.item.as(ExprSyntax.self)
         else {
             context.diagnose(

@@ -15,7 +15,7 @@ extension RouterMacro: MemberMacro {
         // 2. validate route contracts against handler bodies
         // 3. generate boot registration + synthesized wrapper handlers
         let routerPrefix = routerPrefix(from: node)
-        let routerDisablesParameterCheck = hasAttribute(
+        let routerParameterCheckOverride = staticCheckOverride(
             named: disableParameterCheckAttributeName,
             in: declaration.attributes
         )
@@ -33,15 +33,17 @@ extension RouterMacro: MemberMacro {
             webSocketMetadata(from: $0, routerPrefix: routerPrefix, context: context)
         }
 
-        if !routerDisablesParameterCheck {
+        if routerParameterCheckOverride != .error {
             validateRequiredParameters(
                 in: declarationFunctions,
                 forwardedParameters: forwardedParameters,
+                override: routerParameterCheckOverride,
                 context: context
             )
             validateRequiredParameters(
                 in: handlerMethods,
                 forwardedParameters: forwardedParameters,
+                override: routerParameterCheckOverride,
                 context: context
             )
         }

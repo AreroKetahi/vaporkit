@@ -1,21 +1,20 @@
 # Create Router
 
-Create Vapor `RouteCollection` in few macros.
+Create a Vapor `RouteCollection` with a few macros.
 
 ## Overview
 
-Traditionally, creates a `RouteCollection` need to handwriting a large 
-mass of codes. This takes a lot of mental affort to maintain controller
-register codes.
+Traditional `RouteCollection` implementations often mix route registration
+with handler logic. As a controller grows, maintaining that registration code
+can become repetitive and error-prone.
 
-But now with a collection of macros, all maintainance work will be 
-finish by macros! The only things you need to do is writing logic.
+VaporKit moves route registration into macros so the router declaration stays
+close to the handler code.
 
 ## Create a Router
 
-To avoid symbol conflicts, VaporKit use ``Router(_:)`` to create a new
-controller. You definitly can add this macro in structure or class, 
-however structure is recommended.
+Attach ``Router(_:)`` to a struct or class to create a route collection.
+Structs are recommended for most route groups.
 
 ```swift
 @Router
@@ -26,10 +25,9 @@ struct LoginController {
 
 ### Create Route Handler
 
-Define route handler is as breath as easy, use ``Get(_:action:)``, 
-``Post(_:action:)``, ``Put(_:action:)``, or ``Delete(_:action:)`` to
-create a RESTful API. or use ``On(_:method:action:)`` to select a 
-customise HTTP method.
+Use ``Get(_:action:)``, ``Post(_:action:)``, ``Put(_:action:)``, or
+``Delete(_:action:)`` to create REST-style routes. Use
+``On(_:method:action:)`` when you need to choose the HTTP method directly.
 
 You can create a `GET` method like this:
 
@@ -43,7 +41,7 @@ Or a `POST` method like this:
 
 ```swift
 #Post(":id") {
-    let id = try $0.parameters.get("id")
+    let id = $0.parameters.get("id")
     return "Hello, \(id)!"
 }
 ```
@@ -51,8 +49,8 @@ Or a `POST` method like this:
 Or you want to `TRACE` something:
 
 ```swift
-#On(.TRACE, ":item") { request -> HTTPStatus in
-    if try TraceResult(of: request.parameters.get("item") == .ok {
+#On(":item", method: .TRACE) { request -> HTTPStatus in
+    if try TraceResult(of: request.parameters.require("item")) == .ok {
         return .ok
     } else {
         return .notFound
@@ -60,24 +58,24 @@ Or you want to `TRACE` something:
 }
 ```
 
-You might noticed, this cases above use `req`, `request`, `$0` as the
-Request identifier, and that is **completely acceptable**.
+The examples above use `req`, `request`, and `$0` as the request identifier.
+All of those forms are supported.
 
 > Tip:
-> You can use any closure identifer as you want in handler declaration,
+> You can use any closure identifier in handler declarations,
 > even `$0`, and result type is optional also.
 
 ### Customize Routing
 
-``Router(_:)`` accepts a string literal, that define root route in
+``Router(_:)`` accepts a string literal that defines the base path for the
 whole controller.
 
 ```swift
-@Route("update") // all routes start with /update
+@Router("update") // all routes start with /update
 ```
 
-For ``Get(_:action:)`` and its relative, accepts a string that 
-fine-tuning route.
+Route macros such as ``Get(_:action:)`` accept a string literal path relative
+to the router base path.
 
 ```swift
 #Get("brief") { // In this case, route is /update/brief
@@ -85,16 +83,16 @@ fine-tuning route.
 }
 ```
 
-If you want to mark a route node as a parameter, samely add "`:`" 
-before node. Like "update/:id".
+Prefix a path segment with `:` to declare a route parameter, such as
+`"update/:id"`.
 
-You can also remain a "`/`" before route, e.g. `"/update"` is acceptable
-also.
+Leading slashes are accepted, so `"/update"` and `"update"` are normalized the
+same way.
 
 ## Install Middleware
 
-Attach ``Middleware(_:)`` to your declaration can instant setup a 
-middleware during the request.
+Attach ``Middleware(_:)`` to a route declaration to register that route on a
+middleware group.
 
 ```swift
 @Middleware(CheckLoginStatus())
@@ -117,8 +115,8 @@ You can add a lot of middlewares at once.
 
 ## Registering Children Controllers
 
-Use ``Register(_:)``, and one or more children controllers can be 
-register under a centain controller.
+Use ``Register(_:)`` to register one or more child route collections under the
+current router's base path.
 
 ```swift
 @Router("staff")
@@ -130,11 +128,10 @@ struct StaffController {
 
 ## Supporting WebSocket
 
-There is server macro helps you define a WebSocket handler.
+VaporKit also provides macros for WebSocket routes.
 
-By adding a WebSocket Hanlder, use 
-``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)`` directly in
-router.
+Use ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)`` directly inside a
+router to add a WebSocket handler.
 
 ```swift
 @Router
@@ -145,7 +142,7 @@ struct SocketRouter {
 }
 ```
 
-Like Vapor API, you can customise the behaviour before upgrade.
+Like Vapor's API, you can customize behavior before the upgrade completes.
 
 ```swift
 @Router
@@ -155,6 +152,7 @@ struct SocketRouter {
     } didUpgrade: {
         // ...
     }
+}
 ```
 
 Then use ``OnText(action:)``, ``OnBinary(action:)``, 
@@ -176,50 +174,51 @@ Then use ``OnText(action:)``, ``OnBinary(action:)``,
 }
 ```
 
-Samely, identifiers' name are insensitive.
+Callback parameter names are flexible, and shorthand `$0` / `$1` is also
+supported for text and binary handlers.
 
 ## Find Errors at Compile-time
 
-VaporKit allows compiler find some code error in compile time. Like
-route parameter coverage.
+VaporKit can catch some route parameter mistakes during macro expansion.
 
-While you write `<request>.parameters.get("identifier")`, VaporKit will 
-scan whole syntax tree to find if this identifier is defined. If you 
-referenced a undefined identifier, a compile error will appears to warn 
-you.
+When you write `<request>.parameters.get("identifier")` or
+`<request>.parameters.require("identifier")`, VaporKit checks whether that
+literal parameter name is declared in the route path.
 
 ```swift
 #Get(":name") { req in
-    return try req.parameters.get("id") // This must be an error!!!
+    return try req.parameters.require("id") // compile-time diagnostic
 }
 ```
 
-Additionally, use ``ForwardParameters(_:)`` allows you explictly state
-super controller's parameters.
+Use ``ForwardParameters(_:)`` to explicitly state parameters inherited from a
+parent router.
 
 ```swift
 #ForwardParameters("who", "when", "where")
 ```
 
-You can also use ``DisableParameterCheck()`` to silent parameter check.
+You can also use ``DisableParameterCheck(as:)`` to silence or downgrade
+parameter checks.
 
 ```swift
-@Router @DisableParameterCheck // Silence whole router
+@DisableParameterCheck // Silence whole router
+@Router
 struct SayHello {
     @DisableParameterCheck // Silence only this one
     #Get(":name") { req in
-        let name = try req.parameters.get("id")
+        let name = req.parameters.get("id")
         return "Hello \(name)!"
     }
 }
 ```
 
-If you want to silence parameter check more concisly, use 
-``Bypass(_:)``.
+If you want to silence one expression, use
+``Bypass(as:_:)``.
 
 ```swift
 // This call will NEVER be an error.
-#Bypass { try req.parameters.get("id") }
+#Bypass { req.parameters.get("id") }
 ```
 
 ## Topics
@@ -251,9 +250,10 @@ If you want to silence parameter check more concisly, use
 ### Automatic Compile-time Parameter Checking
 
 - ``ForwardParameters(_:)``
-- ``DisableParameterCheck()``
-- ``Bypass(_:)``
+- ``DisableParameterCheck(as:)``
+- ``Bypass(as:_:)``
 
 ## See Also
 
 - <doc:MigratingFromVaporRouting>
+- <doc:StaticRouteParameterChecking>

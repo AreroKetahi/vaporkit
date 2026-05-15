@@ -1,12 +1,13 @@
 # ``VaporKit``
 
-A collection of utilities that simplify vapor semantics.
+A collection of macros that simplify Vapor routing and validation.
 
 ## Overview
 
-This is a macro-based library that allow to use macro syntax to write
-redundant Vapor code. Allowing developer focus on how to implement code
-itself, but not repeatly writing registering code again and again.
+VaporKit is a macro-based library for reducing repetitive Vapor route
+registration and validation boilerplate. It keeps generated code close to
+Vapor's native APIs while letting application code focus on request handling
+and model rules.
 
 ## Topics
 
@@ -15,13 +16,18 @@ itself, but not repeatly writing registering code again and again.
 - <doc:MigratingFromVaporRouting>
 - <doc:MigratingFromVaporValidation>
 
+### Compile-time Static Code Checking
+
+- <doc:StaticRouteParameterChecking>
+- ``StaticCheckSeverity``
+
 ### Route Collection
 
-- ``Router(_:)``
 - <doc:CreateRouter>
+- ``Router(_:)``
 
 ### Validation
 
+- <doc:BuildValidationSystem>
 - ``ValidatableModel()``
 - ``ValidationRule``
-- <doc:BuildValidationSystem>

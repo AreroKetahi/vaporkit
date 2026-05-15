@@ -76,7 +76,6 @@ public struct RouterMacro {
         case requiresTrailingClosure = "Route macros only support trailing closures."
         case doesNotAcceptClosureReference = "Route macros do not accept closure references as arguments. Use a trailing closure and call the handler explicitly."
         case routeHandlerRequiresSingleRequestParameter = "@RouteHandler functions must accept exactly one parameter of type Request or Vapor.Request."
-        case requiredParameterMissingFromRoute = "Required path parameter is not declared in this route URL."
         case webSocketRequiresTrailingClosure = "#WebSocket only supports trailing closures."
         case webSocketOnlySupportsEventMacros = "#WebSocket bodies may only contain websocket event macros."
         case webSocketEventRequiresTrailingClosure = "WebSocket event macros only support trailing closures."
@@ -87,6 +86,29 @@ public struct RouterMacro {
         var message: String { rawValue }
         var diagnosticID: MessageID { .init(domain: DiagnosticSeverity.domain, id: "\(self)") }
         var severity: SwiftDiagnostics.DiagnosticSeverity { .error }
+    }
+
+    struct ParameterCheckDiagnostic: DiagnosticMessage {
+        enum Kind: String {
+            case requiredParameterMissingFromRoute
+            case dynamicParameterName
+        }
+
+        let kind: Kind
+        let severity: SwiftDiagnostics.DiagnosticSeverity
+
+        var message: String {
+            switch kind {
+            case .requiredParameterMissingFromRoute:
+                return "Required path parameter is not declared in this route URL."
+            case .dynamicParameterName:
+                return "Getting a route parameter from a variable is unsafe for static checking. Use a string literal, or wrap the expression in #Bypass to silence this warning."
+            }
+        }
+
+        var diagnosticID: MessageID {
+            .init(domain: DiagnosticSeverity.domain, id: kind.rawValue)
+        }
     }
 
     /// Fix-its stay close to the diagnostics that use them so edits remain discoverable.
@@ -104,7 +126,7 @@ public struct RouterMacro {
         let middlewares: [ExprSyntax]
         let requestKeyword: String?
         let explicitReturnType: String?
-        let disablesParameterCheck: Bool
+        let parameterCheckOverride: StaticCheckOverride?
         let generatedRequestKeyword: TokenSyntax
         let content: CodeBlockItemListSyntax
         let innerName: TokenSyntax
@@ -134,7 +156,7 @@ public struct RouterMacro {
         let method: String
         let middlewares: [ExprSyntax]
         let requestKeyword: String
-        let disablesParameterCheck: Bool
+        let parameterCheckOverride: StaticCheckOverride?
         let body: CodeBlockSyntax?
         let functionName: TokenSyntax
     }
@@ -178,7 +200,13 @@ public struct RouterMacro {
     /// A single `req.parameters.require/get("...")` access discovered inside handler code.
     struct RequiredParameterAccess {
         let syntax: Syntax
-        let name: String
+        let name: String?
+        let override: StaticCheckOverride?
+    }
+
+    enum StaticCheckOverride {
+        case error
+        case warning
     }
 
     /// Rewrites closure shorthand access so generated handlers can use a stable parameter name.
@@ -230,7 +258,9 @@ public struct RouterMacro {
     /// Collects `req.parameters.require/get("...")` accesses for a given request identifier.
     final class RequiredParameterVisitor: SyntaxVisitor {
         private let acceptedRequestNames: Set<String>
+        private var bypassStack: [StaticCheckOverride] = []
         private(set) var requiredParameters: [RequiredParameterAccess] = []
+        private(set) var dynamicParameterAccesses: [Syntax] = []
 
         init(acceptedRequestNames: Set<String>) {
             self.acceptedRequestNames = acceptedRequestNames
@@ -248,19 +278,42 @@ public struct RouterMacro {
                 return .visitChildren
             }
 
-            // `#Bypass` marks a region that syntax-only validation passes should leave untouched.
-            return .skipChildren
+            switch RouterMacro.staticCheckOverride(from: node) {
+            case .error:
+                // `#Bypass` marks a region that syntax-only validation passes should leave untouched.
+                return .skipChildren
+            case .warning:
+                bypassStack.append(.warning)
+                if let trailingClosure = node.trailingClosure {
+                    walk(Syntax(trailingClosure.statements))
+                }
+                _ = bypassStack.popLast()
+                return .skipChildren
+            }
         }
 
         override func visit(_ node: FunctionCallExprSyntax) -> SyntaxVisitorContinueKind {
-            if let fieldName = requiredParameterName(from: node) {
-                requiredParameters.append(.init(syntax: Syntax(node), name: fieldName))
+            if let access = requiredParameterAccess(from: node) {
+                switch (access.name, bypassStack.last) {
+                case (.some, _):
+                    requiredParameters.append(
+                        .init(
+                            syntax: access.syntax,
+                            name: access.name,
+                            override: bypassStack.last
+                        )
+                    )
+                case (.none, .warning):
+                    break
+                case (.none, _):
+                    dynamicParameterAccesses.append(access.syntax)
+                }
             }
 
             return .visitChildren
         }
 
-        private func requiredParameterName(from call: FunctionCallExprSyntax) -> String? {
+        private func requiredParameterAccess(from call: FunctionCallExprSyntax) -> RequiredParameterAccess? {
             guard let calledMember = call.calledExpression.as(MemberAccessExprSyntax.self),
                   (
                     calledMember.declName.baseName.text == "get" ||
@@ -276,7 +329,11 @@ public struct RouterMacro {
             }
 
             // Only literal parameter names participate in compile-time validation.
-            return RouterMacro.stringLiteralValue(from: firstArgument.expression)
+            return .init(
+                syntax: Syntax(call),
+                name: RouterMacro.stringLiteralValue(from: firstArgument.expression),
+                override: nil
+            )
         }
     }
 }

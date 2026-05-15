@@ -9,19 +9,17 @@ import Vapor
 
 /// Generates Vapor validation support for a model type.
 ///
-/// ## Overview
 /// Attach `@ValidatableModel` to a struct or class that contains properties
-/// annotated with `@Constraint`. The macro synthesizes `validations(_:)` and
-/// adds `Vapor.Validatable` conformance.
+/// annotated with ``Constraint(_:required:message:)``. The macro synthesizes
+/// `validations(_:)` and adds `Vapor.Validatable` conformance.
 @attached(member, names: named(validations))
 @attached(extension, conformances: Vapor.Validatable)
 public macro ValidatableModel() = #externalMacro(module: "VaporKitMacros", type: "ValidatableMacro")
 
 /// Declares a validation constraint for a property.
 ///
-/// ## Overview
-/// Attach `@Constraint` to a stored property in a `@ValidatableModel` type. The
-/// macro uses the supplied `ValidationRule` to generate a Vapor validation entry
+/// Attach `@Constraint` to a stored property in a ``ValidatableModel()`` type. The
+/// macro uses the supplied ``ValidationRule`` to generate a Vapor validation entry
 /// for the property.
 ///
 /// - Parameters:
@@ -37,9 +35,8 @@ public macro Constraint(
 
 /// Declares a custom validation constraint for a property.
 ///
-/// ## Overview
 /// Attach this overload of `@Constraint` to a stored property in a
-/// `@ValidatableModel` type when validation requires a custom predicate. The
+/// ``ValidatableModel()`` type when validation requires a custom predicate. The
 /// generated Vapor validation decodes the property as the supplied type and
 /// evaluates the predicate.
 ///

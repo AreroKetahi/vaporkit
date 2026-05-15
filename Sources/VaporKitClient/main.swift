@@ -164,3 +164,71 @@ struct PreviewRoutes {
         }
     }
 }
+
+// MARK: - Static Parameter Check Scope Preview
+
+#if PreviewDiagnose
+
+@Router("api/static-check/default")
+struct DefaultStaticCheckRoutes {
+    // Warning: dynamic parameter names are allowed, but cannot be proven by syntax-only checks.
+    #Get(":id/dynamic") { req in
+        let key = "id"
+        return req.parameters.get(key) ?? "missing"
+    }
+
+    // No diagnostic: literal access matches the route path.
+    #Get(":id/literal") { req in
+        try req.parameters.require("id")
+    }
+}
+
+@DisableParameterCheck(as: .warning)
+@Router("api/static-check/router-warning")
+struct RouterWarningStaticCheckRoutes {
+    // Warning: this would normally be an error, but router-level warning mode downgrades it.
+    #Get(":id/missing-literal") { req in
+        try req.parameters.require("slug")
+    }
+
+    // No diagnostic: router-level warning mode suppresses lower-severity dynamic-name warnings.
+    #Get(":id/dynamic") { req in
+        let key = "id"
+        return req.parameters.get(key) ?? "missing"
+    }
+}
+
+@Router("api/static-check/route-scope")
+struct RouteScopedStaticCheckRoutes {
+    // Warning: only this route downgrades the missing literal parameter.
+    @DisableParameterCheck(as: .warning)
+    #Get(":id/route-warning") { req in
+        try req.parameters.require("slug")
+    }
+
+    // No diagnostic: this route fully disables static parameter checks.
+    @DisableParameterCheck
+    #Get(":id/route-disabled") { req in
+        try req.parameters.require("slug")
+    }
+}
+
+@Router("api/static-check/bypass")
+struct BypassStaticCheckRoutes {
+    // Warning: only the wrapped expression is downgraded.
+    #Get(":id/local-warning") { req in
+        try #Bypass(as: .warning) {
+            req.parameters.require("slug")
+        }
+    }
+
+    // No diagnostic: the dynamic key warning is locally silenced.
+    #Get(":id/local-disabled") { req in
+        let key = "slug"
+        return #Bypass {
+            req.parameters.get(key)
+        } ?? "missing"
+    }
+}
+
+#endif

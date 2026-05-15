@@ -20,7 +20,7 @@ Add VaporKit to your package dependencies.
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/AreroKetahi/vaporkit.git", from: "0.1.0)
+    .package(url: "https://github.com/AreroKetahi/vaporkit.git", from: "0.1.0")
 ]
 ```
 

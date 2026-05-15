@@ -9,7 +9,6 @@ import Vapor
 
 /// Defines a route collection from a nominal type.
 ///
-/// ## Overview
 /// Attach `@Router` to a struct or class that declares VaporKit route macros.
 /// The macro synthesizes `boot(routes:)` and adds `Vapor.RouteCollection`
 /// conformance. The optional URL is used as the base path for every route and
@@ -24,8 +23,7 @@ public macro Router(_ url: StaticString? = nil) = #externalMacro(module: "VaporK
 
 /// Declares a route for an explicit HTTP method.
 ///
-/// ## Overview
-/// Use `#On` inside an `@Router` type when the route method is not covered by a
+/// Use `#On` inside an ``Router(_:)`` type when the route method is not covered by a
 /// method-specific helper. The trailing closure becomes the generated route
 /// handler and may use an explicit request parameter or `$0`.
 ///
@@ -42,8 +40,7 @@ public macro On<T: AsyncResponseEncodable>(
 
 /// Declares a `GET` route.
 ///
-/// ## Overview
-/// Use `#Get` inside an `@Router` type to register a `GET` handler. The
+/// Use `#Get` inside an ``Router(_:)`` type to register a `GET` handler. The
 /// trailing closure becomes the generated route handler and may use an explicit
 /// request parameter or `$0`.
 ///
@@ -58,8 +55,7 @@ public macro Get<T: AsyncResponseEncodable>(
 
 /// Declares a `POST` route.
 ///
-/// ## Overview
-/// Use `#Post` inside an `@Router` type to register a `POST` handler. The
+/// Use `#Post` inside an ``Router(_:)`` type to register a `POST` handler. The
 /// trailing closure becomes the generated route handler and may use an explicit
 /// request parameter or `$0`.
 ///
@@ -74,8 +70,7 @@ public macro Post<T: AsyncResponseEncodable>(
 
 /// Declares a `PUT` route.
 ///
-/// ## Overview
-/// Use `#Put` inside an `@Router` type to register a `PUT` handler. The
+/// Use `#Put` inside an ``Router(_:)`` type to register a `PUT` handler. The
 /// trailing closure becomes the generated route handler and may use an explicit
 /// request parameter or `$0`.
 ///
@@ -90,8 +85,7 @@ public macro Put<T: AsyncResponseEncodable>(
 
 /// Declares a `DELETE` route.
 ///
-/// ## Overview
-/// Use `#Delete` inside an `@Router` type to register a `DELETE` handler. The
+/// Use `#Delete` inside an ``Router(_:)`` type to register a `DELETE` handler. The
 /// trailing closure becomes the generated route handler and may use an explicit
 /// request parameter or `$0`.
 ///
@@ -106,11 +100,11 @@ public macro Delete<T: AsyncResponseEncodable>(
 
 /// Declares a WebSocket route.
 ///
-/// ## Overview
-/// Use `#WebSocket` inside an `@Router` type to register a WebSocket endpoint.
+/// Use `#WebSocket` inside an ``Router(_:)`` type to register a WebSocket endpoint.
 /// The primary trailing closure is used as `shouldUpgrade` when `didUpgrade` is
 /// supplied; otherwise the closure is treated as the upgrade body. WebSocket
-/// events are declared with `#OnText`, `#OnBinary`, and `#OnClose`.
+/// events are declared with ``OnText(action:)``, ``OnBinary(action:)``, and
+/// ``OnClose(action:)`.
 ///
 /// - Parameters:
 ///   - url: The URL path segments relative to the enclosing router.
@@ -127,10 +121,9 @@ public macro WebSocket(
 
 /// Declares a WebSocket text-message handler.
 ///
-/// ## Overview
-/// Use `#OnText` inside a `#WebSocket` upgrade body. The handler may declare
-/// explicit `(WebSocket, String)` parameters or use `$0` and `$1`, which are
-/// rewritten to generated unique names.
+/// Use `#OnText` inside a ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)``
+/// upgrade body. The handler may declare explicit `(WebSocket, String)`
+/// parameters or use `$0` and `$1`, which are rewritten to generated unique names.
 ///
 /// - Parameter action: The async text-message callback.
 @freestanding(expression)
@@ -140,10 +133,9 @@ public macro OnText(
 
 /// Declares a WebSocket binary-message handler.
 ///
-/// ## Overview
-/// Use `#OnBinary` inside a `#WebSocket` upgrade body. The handler may declare
-/// explicit `(WebSocket, ByteBuffer)` parameters or use `$0` and `$1`, which are
-/// rewritten to generated unique names.
+/// Use `#OnBinary` inside a ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)``
+/// upgrade body. The handler may declare explicit `(WebSocket, ByteBuffer)`
+/// parameters or use `$0` and `$1`, which are rewritten to generated unique names.
 ///
 /// - Parameter action: The async binary-message callback.
 @freestanding(expression)
@@ -153,9 +145,9 @@ public macro OnBinary(
 
 /// Declares a WebSocket close handler.
 ///
-/// ## Overview
-/// Use `#OnClose` inside a `#WebSocket` upgrade body to run code when the
-/// WebSocket closes. The closure must not declare parameters.
+/// Use `#OnClose` inside a ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)``
+/// upgrade body to run code when the WebSocket closes. The closure must not
+/// declare parameters.
 ///
 /// - Parameter action: The close callback body.
 @freestanding(expression)
@@ -167,8 +159,7 @@ public macro OnClose(
 
 /// Marks an existing function as a route handler.
 ///
-/// ## Overview
-/// Attach `@RouteHandler` to a function inside an `@Router` type when the
+/// Attach `@RouteHandler` to a function inside an ``Router(_:)`` type when the
 /// function should be registered directly instead of using a freestanding route
 /// macro. The function must accept exactly one `Request` or `Vapor.Request`
 /// parameter.
@@ -184,8 +175,7 @@ public macro RouteHandler(
 
 /// Marks an existing function as a route handler with path segments.
 ///
-/// ## Overview
-/// Attach `@RouteHandler` to a function inside an `@Router` type when the route
+/// Attach `@RouteHandler` to a function inside an ``Router(_:)`` type when the route
 /// path is easier to express as multiple static string segments. The function
 /// must accept exactly one `Request` or `Vapor.Request` parameter.
 ///
@@ -200,10 +190,9 @@ public macro RouteHandler(
 
 /// Applies middleware to a route declaration.
 ///
-/// ## Overview
-/// Attach `@Middleware` to a freestanding route macro or `@RouteHandler`
-/// function. The route is registered on `routes.grouped(...)` with the supplied
-/// middleware instances.
+/// Attach `@Middleware` to a freestanding route macro or
+/// ``RouteHandler(_:method:)-(StaticString?,_)`` function. The route is registered
+/// on `routes.grouped(...)` with the supplied middleware instances.
 ///
 /// - Parameter middlewares: The middleware instances to apply to the route.
 @attached(peer)
@@ -211,8 +200,7 @@ public macro Middleware(_ middlewares: any Middleware...) = #externalMacro(modul
 
 /// Registers child route collections.
 ///
-/// ## Overview
-/// Use `#Register` inside an `@Router` type to register one or more child
+/// Use `#Register` inside an ``Router(_:)`` type to register one or more child
 /// `RouteCollection` values. The enclosing router's base path is applied to the
 /// registration.
 ///
@@ -224,8 +212,7 @@ public macro Register(_ router: any RouteCollection...) = #externalMacro(module:
 
 /// Declares route parameters forwarded from an outer router.
 ///
-/// ## Overview
-/// Use `#ForwardParameters` inside an `@Router` type when this router is
+/// Use `#ForwardParameters` inside an ``Router(_:)`` type when this router is
 /// registered below a parent path that contains route parameters. The declared
 /// names are accepted by static checks for `req.parameters.get` and
 /// `req.parameters.require`.
@@ -236,9 +223,10 @@ public macro ForwardParameters(_ parameters: StaticString...) = #externalMacro(m
 
 /// Disables static route-parameter checking.
 ///
-/// ## Overview
-/// Attach `@DisableParameterCheck` to an `@Router` type to disable checks for
-/// the whole router, or attach it to a route declaration or `@RouteHandler`
+/// Attach `@DisableParameterCheck` to an ``Router(_:)`` type to disable checks for
+/// the whole router, or attach it to a route declaration or ``RouteHandler(_:method:)-(StaticString?,_)``
 /// function to disable checks for only that route.
+///
+/// - Parameter severity: The highest severity to silence or downgrade.
 @attached(peer)
-public macro DisableParameterCheck() = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
+public macro DisableParameterCheck(as severity: StaticCheckSeverity = .error) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
