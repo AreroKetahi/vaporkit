@@ -48,6 +48,9 @@ let package = Package(
             dependencies: [
                 "VaporKitMacros",
                 .product(name: "Vapor", package: "vapor"),
+            ],
+            swiftSettings: [
+                .strictMemorySafety()
             ]
         ),
 

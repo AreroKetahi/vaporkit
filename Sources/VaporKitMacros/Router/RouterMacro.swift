@@ -23,6 +23,7 @@ public struct RouterMacro {
     static let forwardParametersMacroName = "ForwardParameters"
     static let webSocketMacroName = "WebSocket"
     static let webSocketDidUpgradeLabel = "didUpgrade"
+    static let autoRegisterableAttributeName = "AutoRegisterable"
 
     /// Every freestanding route declaration macro supported by `@Router`.
     enum RouteMacroName: String {

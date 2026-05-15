@@ -4,6 +4,61 @@ import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 extension RouterMacro {
+    static func autoRegistrationDeclarations(
+        for declaration: some DeclGroupSyntax,
+        in context: some MacroExpansionContext
+    ) -> [DeclSyntax] {
+        guard
+            hasAttribute(
+                named: autoRegisterableAttributeName,
+                in: declaration.attributes
+            ),
+            let typeName = nominalTypeName(of: declaration)
+        else {
+            return []
+        }
+
+        let recordName = context.makeUniqueName("RouteRegisterRecord")
+        let descriptorID = "\(typeName)"
+
+        return [
+            """
+            #if objectFormat(MachO)
+            @section("__DATA,__swift5_vkrt")
+            #elseif objectFormat(ELF)
+            @section("swift5_vkrt")
+            #elseif objectFormat(COFF)
+            @section(".sw5vkrt")
+            #endif
+            @used
+            private nonisolated static let \(recordName): VaporKit._RouteRegisterRecord = (
+                VaporKit._RouteDiscovery.kind,
+                VaporKit._RouteDiscovery.version,
+                { outValue, type, hint, reserved in
+                    guard type.load(as: Any.Type.self) == VaporKit._RouteDescriptor.self else {
+                        return false
+                    }
+
+                    outValue.initializeMemory(
+                        as: VaporKit._RouteDescriptor.self,
+                        to: VaporKit._RouteDescriptor(
+                            id: \(literal: descriptorID),
+                            routerName: \(literal: typeName),
+                            makeCollection: {
+                                \(raw: typeName)()
+                            }
+                        )
+                    )
+
+                    return true
+                },
+                0,
+                0
+            )
+            """
+        ]
+    }
+
     static func bootDeclaration(
         for functions: [FunctionMetadata],
         handlerMethods: [HandlerMethodMetadata],
@@ -176,5 +231,18 @@ extension RouterMacro {
         }
         let lastLine = lines.last?.trimmingCharacters(in: .whitespaces) ?? "}"
         return ([firstLine] + bodyLines + [lastLine]).joined(separator: "\n")
+    }
+
+    static func nominalTypeName(of declaration: some DeclGroupSyntax) -> String? {
+        if let structDecl = declaration.as(StructDeclSyntax.self) {
+            return structDecl.name.text
+        }
+        if let classDecl = declaration.as(ClassDeclSyntax.self) {
+            return classDecl.name.text
+        }
+        if let actorDecl = declaration.as(ActorDeclSyntax.self) {
+            return actorDecl.name.text
+        }
+        return nil
     }
 }

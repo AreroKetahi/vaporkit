@@ -18,3 +18,6 @@
 /// - Returns: The value produced by `action`.
 @freestanding(expression)
 public macro Bypass<T>(as severity: StaticCheckSeverity = .error, _ action: () -> T) -> T = #externalMacro(module: "VaporKitMacros", type: "BypassMacro")
+
+@attached(peer)
+public macro AutoRegisterable() = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")

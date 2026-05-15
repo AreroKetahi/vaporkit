@@ -61,6 +61,7 @@ extension RouterMacro: MemberMacro {
         result.append(contentsOf: declarationFunctions.map(handlerDeclaration(for:)))
         result.append(contentsOf: webSockets.compactMap(shouldUpgradeDeclaration(for:)))
         result.append(contentsOf: webSockets.map(handlerDeclaration(for:)))
+        result.append(contentsOf: autoRegistrationDeclarations(for: declaration, in: context))
         return result
     }
 }

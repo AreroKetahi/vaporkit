@@ -39,36 +39,10 @@ final class RouterMacroExpansionTests: XCTestCase {
                         "ok"
                 }
 
-                private nonisolated static func __macro_local_19MakeRouteCollectionfMu_() -> any Vapor.RouteCollection {
-                    MyRoute()
-                }
-
-                private nonisolated static func __macro_local_21RouteRegisterAccessorfMu_(
-                    _ outValue: UnsafeMutableRawPointer,
-                    _ type: UnsafeRawPointer,
-                    _ hint: UnsafeRawPointer?,
-                    _ reserved: UInt
-                ) -> CBool {
-                    guard type.load(as: Any.Type.self) == VaporKit._RouteDescriptor.self else {
-                        return false
-                    }
-
-                    outValue.initializeMemory(
-                        as: VaporKit._RouteDescriptor.self,
-                        to: VaporKit._RouteDescriptor(
-                            id: "MyRoute",
-                            routerName: "MyRoute",
-                            makeCollection: __macro_local_19MakeRouteCollectionfMu_
-                        )
-                    )
-
-                    return true
-                }
-
                 #if objectFormat(MachO)
                 @section("__DATA,__swift5_vkrt")
                 #elseif objectFormat(ELF)
-                @section("swift5_tests")
+                @section("swift5_vkrt")
                 #elseif objectFormat(COFF)
                 @section(".sw5vkrt")
                 #endif
@@ -76,7 +50,24 @@ final class RouterMacroExpansionTests: XCTestCase {
                 private nonisolated static let __macro_local_19RouteRegisterRecordfMu_: VaporKit._RouteRegisterRecord = (
                     VaporKit._RouteDiscovery.kind,
                     VaporKit._RouteDiscovery.version,
-                    __macro_local_21RouteRegisterAccessorfMu_,
+                    { outValue, type, hint, reserved in
+                        guard type.load(as: Any.Type.self) == VaporKit._RouteDescriptor.self else {
+                            return false
+                        }
+
+                        outValue.initializeMemory(
+                            as: VaporKit._RouteDescriptor.self,
+                            to: VaporKit._RouteDescriptor(
+                                id: "MyRoute",
+                                routerName: "MyRoute",
+                                makeCollection: {
+                                    MyRoute()
+                                }
+                            )
+                        )
+
+                        return true
+                    },
                     0,
                     0
                 )
