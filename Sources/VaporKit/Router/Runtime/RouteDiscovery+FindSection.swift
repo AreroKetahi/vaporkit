@@ -7,7 +7,7 @@
 
 internal func _findRouteRecordSections() -> [UnsafeRawBufferPointer] {
 #if canImport(MachO)
-    return unsafe _findSectionInLoadedImages(segment: "__DATA", section: "__swift5_vpkt")
+    return unsafe _findSectionInLoadedImages(segment: "__DATA_CONST", section: "__swift5_vpkt")
 #elseif os(Linux) || os(FreeBSD) || os(OpenBSD) || os(Android)
     return unsafe _findELFRouteRecordSections()
 #elseif os(Windows)

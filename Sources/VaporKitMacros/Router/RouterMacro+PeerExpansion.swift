@@ -45,7 +45,7 @@ extension RouterMacro: PeerMacro {
             """,
             """
             #if objectFormat(MachO)
-            @section("__DATA,__swift5_vpkt")
+            @section("__DATA_CONST,__swift5_vpkt")
             #elseif objectFormat(ELF)
             @section("swift5_vpkt")
             #elseif objectFormat(COFF)
