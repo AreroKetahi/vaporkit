@@ -25,30 +25,29 @@ import MachO
 
 private func _getSectionData(
     header: UnsafePointer<mach_header_64>,
-    segment: String,
-    section: String
+    segment: StaticString,
+    section: StaticString
 ) -> UnsafeRawBufferPointer? {
-    var size: UInt64 = 0
-    guard
-        let pointer = unsafe getsectdatafromheader_64(
-            header,
-            segment,
-            section,
-            &size
-        )
-    else {
+    var size: UInt = 0
+    
+    guard let start = unsafe getsectiondata(
+        header,
+        segment.utf8Start,
+        section.utf8Start,
+        &size
+    ), size > 0 else {
         return nil
     }
     
     return unsafe UnsafeRawBufferPointer(
-        start: UnsafeRawPointer(pointer),
+        start: UnsafeRawPointer(start),
         count: Int(size)
     )
 }
 
 func _findSectionInLoadedImages(
-    segment: String,
-    section: String
+    segment: StaticString,
+    section: StaticString
 ) -> [UnsafeRawBufferPointer] {
     var results: [UnsafeRawBufferPointer] = unsafe []
     let count = _dyld_image_count()
