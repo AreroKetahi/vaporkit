@@ -126,6 +126,33 @@ struct StaffController {
 }
 ```
 
+## Auto-Register Routers
+
+Attach ``AutoRegisterable()`` to a ``Router(_:)`` type when the route collection
+should be discovered and registered at runtime.
+
+```swift
+@AutoRegisterable
+@Router("api/todos")
+struct TodoController {
+    #Get { req in
+        "ok"
+    }
+}
+```
+
+Then call ``Vapor/Application/autoRegisterRouters()`` during application setup.
+
+```swift
+public func configure(_ app: Application) throws {
+    try app.autoRegisterRouters()
+}
+```
+
+Auto-registerable routers must be constructible with `init()`. If a router
+needs dependencies, register it explicitly with Vapor's `register(collection:)`
+or use ``Register(_:)`` from another router.
+
 ## Supporting WebSocket
 
 VaporKit also provides macros for WebSocket routes.

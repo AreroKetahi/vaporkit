@@ -25,6 +25,8 @@ and model rules.
 
 - <doc:CreateRouter>
 - ``Router(_:)``
+- ``AutoRegisterable()``
+- ``Vapor/Application/autoRegisterRouters()``
 
 ### Validation
 
