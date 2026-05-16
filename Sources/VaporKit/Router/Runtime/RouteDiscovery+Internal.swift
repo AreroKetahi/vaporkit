@@ -35,7 +35,7 @@ public typealias _RouteRegisterAccessor = @convention(c) (
 public typealias _RouteRegisterRecord = (
     kind: UInt32,
     version: UInt32,
-    accessor: _RouteRegisterAccessor?,
+    accessor: _RouteRegisterAccessor,
     context: UInt,
     reserved: UInt
 )

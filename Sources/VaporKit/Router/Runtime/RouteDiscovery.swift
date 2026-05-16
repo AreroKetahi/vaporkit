@@ -22,7 +22,7 @@ public enum _RouteDiscovery {
     ) -> _RouteDescriptor? {
         guard unsafe record.kind == kind else { return nil }
         guard unsafe record.version == version else { return nil }
-        guard let accessor = unsafe record.accessor else { return nil }
+        let accessor = unsafe record.accessor
         
         return unsafe withUnsafeTemporaryAllocation(of: _RouteDescriptor.self, capacity: 1) { buffer in
             let initialized = unsafe withUnsafePointer(to: _RouteDescriptor.self) { type in

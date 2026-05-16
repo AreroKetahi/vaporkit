@@ -7,11 +7,11 @@
 
 internal func _findRouteRecordSections() -> [UnsafeRawBufferPointer] {
 #if canImport(MachO)
-    return unsafe _findSectionInLoadedImages(segment: "__DATA", section: "__swift5_vkrt")
+    return unsafe _findSectionInLoadedImages(segment: "__DATA", section: "__swift5_vpkt")
 #elseif os(Linux) || os(FreeBSD) || os(OpenBSD) || os(Android)
     return unsafe _findELFRouteRecordSections()
 #elseif os(Windows)
-    return _findCOFFSections(section: ".sw5vkrt")
+    return _findCOFFSections(section: ".sw5vpkt")
 #else
     return []
 #endif
@@ -97,14 +97,14 @@ private struct _ELFSectionBound: Sendable, ~Copyable {
     }
 }
 
-@_silgen_name("__start_swift5_vkrt")
-private nonisolated(unsafe) var _swift5VKRTSectionStart: _ELFSectionBound
+@_silgen_name("__start_swift5_vpkt")
+private nonisolated(unsafe) var _swift5VPKTSectionStart: _ELFSectionBound
 
-@_silgen_name("__stop_swift5_vkrt")
-private nonisolated(unsafe) var _swift5VKRTSectionEnd: _ELFSectionBound
+@_silgen_name("__stop_swift5_vpkt")
+private nonisolated(unsafe) var _swift5VPKTSectionEnd: _ELFSectionBound
 
 private func _findELFRouteRecordSections() -> [UnsafeRawBufferPointer] {
-    let range = unsafe _swift5VKRTSectionStart ..< _swift5VKRTSectionEnd
+    let range = unsafe _swift5VPKTSectionStart ..< _swift5VPKTSectionEnd
     guard range.count > 0 else {
         return []
     }

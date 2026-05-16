@@ -17,6 +17,7 @@ import Vapor
 /// - Parameter url: The optional base URL path for the router.
 @attached(member, names: named(boot), arbitrary)
 @attached(extension, conformances: RouteCollection)
+@attached(peer, names: prefixed(`$`))
 public macro Router(_ url: StaticString? = nil) = #externalMacro(module: "VaporKitMacros", type: "RouterMacro")
 
 // MARK: - Handler Declaration

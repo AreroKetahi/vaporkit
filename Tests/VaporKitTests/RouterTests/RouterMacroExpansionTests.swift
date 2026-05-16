@@ -38,40 +38,46 @@ final class RouterMacroExpansionTests: XCTestCase {
                 func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         "ok"
                 }
-
-                #if objectFormat(MachO)
-                @section("__DATA,__swift5_vkrt")
-                #elseif objectFormat(ELF)
-                @section("swift5_vkrt")
-                #elseif objectFormat(COFF)
-                @section(".sw5vkrt")
-                #endif
-                @used
-                private nonisolated static let __macro_local_19RouteRegisterRecordfMu_: VaporKit._RouteRegisterRecord = (
-                    VaporKit._RouteDiscovery.kind,
-                    VaporKit._RouteDiscovery.version,
-                    { outValue, type, hint, reserved in
-                        guard type.load(as: Any.Type.self) == VaporKit._RouteDescriptor.self else {
-                            return false
-                        }
-
-                        outValue.initializeMemory(
-                            as: VaporKit._RouteDescriptor.self,
-                            to: VaporKit._RouteDescriptor(
-                                id: "MyRoute",
-                                routerName: "MyRoute",
-                                makeCollection: {
-                                    MyRoute()
-                                }
-                            )
-                        )
-
-                        return true
-                    },
-                    0,
-                    0
-                )
             }
+
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private nonisolated let __macro_local_29VaporKitAutoRegister_accessorfMu_: VaporKit._RouteRegisterAccessor = { outValue, type, _, _ in
+                guard unsafe type.load(as: Any.Type.self) == VaporKit._RouteDescriptor.self else {
+                    return false
+                }
+
+                unsafe outValue.initializeMemory(
+                    as: VaporKit._RouteDescriptor.self,
+                    to: VaporKit._RouteDescriptor(
+                        id: "MyRoute",
+                        routerName: "MyRoute",
+                        makeCollection: {
+                            MyRoute()
+                        }
+                    )
+                )
+
+                return true
+            }
+
+            #if objectFormat(MachO)
+            @section("__DATA,__swift5_vpkt")
+            #elseif objectFormat(ELF)
+            @section("swift5_vpkt")
+            #elseif objectFormat(COFF)
+            @section(".sw5vpkt")
+            #endif
+            @used
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private let __macro_local_27VaporKitAutoRegister_recordfMu_: VaporKit._RouteRegisterRecord = (
+                0x766B_7274,
+                1,
+                {
+                    unsafe __macro_local_29VaporKitAutoRegister_accessorfMu_($0, $1, $2, $3)
+                },
+                0,
+                0
+            )
 
             extension MyRoute: Vapor.RouteCollection {
             }

@@ -15,6 +15,7 @@ public struct RouterMacro {
     /// Prefix used when generating unique handler names.
     static let generatedHandlerName = "RouteHandler"
 
+    static let routerAttributeName = "Router"
     static let routeHandlerAttributeName = "RouteHandler"
     static let middlewareAttributeName = "Middleware"
     static let disableParameterCheckAttributeName = "DisableParameterCheck"
