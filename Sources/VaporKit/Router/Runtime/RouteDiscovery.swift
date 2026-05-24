@@ -9,7 +9,7 @@ public enum _RouteDiscovery {
     public static let kind: UInt32 = 0x766B_7274 // vkrt -> VaporKit RouTe
     public static let version: UInt32 = 1
     
-    public static func _discover() -> [_RouteDescriptor] {
+    static func _discover() -> [_RouteDescriptor] {
         unsafe _findRouteRecordSections().flatMap { buffer in
             unsafe buffer.withMemoryRebound(to: _RouteRegisterRecord.self) { recordBuffers in
                 unsafe recordBuffers.compactMap(__loadDescriptor)

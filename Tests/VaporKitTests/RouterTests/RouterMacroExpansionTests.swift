@@ -2,20 +2,11 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import MacroTesting
-import XCTest
+import Testing
 
-final class RouterMacroExpansionTests: XCTestCase {
-    override func invokeTest() {
-        #if canImport(VaporKitMacros)
-        withMacroTesting(macros: testMacros) {
-            super.invokeTest()
-        }
-        #else
-        super.invokeTest()
-        #endif
-    }
-
-    func testAutoRegisterableRouterEmitsRuntimeRecord() throws {
+@Suite(.macros(testMacros))
+struct RouterMacroExpansionTests {
+    @Test func autoRegisterableRouterEmitsRuntimeRecord() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -61,7 +52,7 @@ final class RouterMacroExpansionTests: XCTestCase {
             }
 
             #if objectFormat(MachO)
-            @section("__DATA,__swift5_vpkt")
+            @section("__DATA_CONST,__swift5_vpkt")
             #elseif objectFormat(ELF)
             @section("swift5_vpkt")
             #elseif objectFormat(COFF)
@@ -88,7 +79,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testRegistersFreestandingRoutes() throws {
+    @Test func registersFreestandingRoutes() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -154,7 +145,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testRegistersFreestandingRoutesWithEmptyPath() throws {
+    @Test func registersFreestandingRoutesWithEmptyPath() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -196,7 +187,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testRegistersFreestandingRoutesWithMiddleware() throws {
+    @Test func registersFreestandingRoutesWithMiddleware() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -230,7 +221,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testPreservesExplicitFreestandingRouteReturnType() throws {
+    @Test func preservesExplicitFreestandingRouteReturnType() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -272,7 +263,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testRegistersChildRouteCollectionsUnderRouterPrefix() throws {
+    @Test func registersChildRouteCollectionsUnderRouterPrefix() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -300,7 +291,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testForwardedParametersSatisfyRouteParameterValidation() throws {
+    @Test func forwardedParametersSatisfyRouteParameterValidation() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -339,7 +330,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testDisablesParameterCheckForRouterAndSingleRoute() throws {
+    @Test func DisablesParameterCheckForRouterAndSingleRoute() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -401,7 +392,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testRegistersWebSocketRoutes() throws {
+    @Test func registersWebSocketRoutes() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -460,7 +451,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testRewritesWebSocketEventShorthandArguments() throws {
+    @Test func rewritesWebSocketEventShorthandArguments() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -511,7 +502,7 @@ final class RouterMacroExpansionTests: XCTestCase {
         #endif
     }
 
-    func testRewritesShorthandShouldUpgradeRequestToUniqueName() throws {
+    @Test func rewritesShorthandShouldUpgradeRequestToUniqueName() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
