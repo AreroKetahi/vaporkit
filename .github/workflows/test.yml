@@ -1,0 +1,50 @@
+name: Swift Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-linux:
+    name: Swift test (Linux)
+    runs-on: ubuntu-24.04
+    container: swift:6.3
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Cache Swift build artifacts
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-swift-6.3-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-6.3-
+
+      - name: Run tests
+        run: swift test -Xswiftc -warnings-as-errors
+
+  test-macos:
+    name: Swift test (macOS)
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Cache Swift build artifacts
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-swift-6.3-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-swift-6.3-
+
+      - name: Run tests
+        run: swift test -Xswiftc -warnings-as-errors
