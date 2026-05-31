@@ -71,6 +71,15 @@ let package = Package(
                 .product(name: "MacroTesting", package: "swift-macro-testing"),
             ]
         ),
+        
+        .testTarget(
+            name: "VaporKitIntegrationTests",
+            dependencies: [
+                "VaporKit",
+                .product(name: "Vapor", package: "vapor"),
+                .product(name: "VaporTesting", package: "vapor"),
+            ]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
