@@ -1,5 +1,8 @@
 # VaporKit
 
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FAreroKetahi%2Fvaporkit%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/AreroKetahi/vaporkit)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FAreroKetahi%2Fvaporkit%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/AreroKetahi/vaporkit)
+
 VaporKit is a Swift macro package for reducing repetitive Vapor routing and
 validation code while keeping the generated code close to Vapor's native APIs.
 
