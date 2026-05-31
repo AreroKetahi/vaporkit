@@ -30,10 +30,10 @@ extension RouterMacro {
         let path = splitURL(metadata.path)
         let builder = routeBuilderExpression(from: metadata.middlewares)
         guard !path.isEmpty else {
-            return "\(builder).on(.\(metadata.method), use: _\(metadata.innerName))"
+            return "\(builder).on(.\(metadata.method), use: \(metadata.innerName))"
         }
 
-        return "\(builder).on(.\(metadata.method), \(path), use: _\(metadata.innerName))"
+        return "\(builder).on(.\(metadata.method), \(path), use: \(metadata.innerName))"
     }
 
     static func routeRegistration(for metadata: HandlerMethodMetadata) -> String {
@@ -60,10 +60,10 @@ extension RouterMacro {
         }
 
         if let shouldUpgradeName = metadata.shouldUpgradeName {
-            arguments.append("shouldUpgrade: _\(shouldUpgradeName)")
+            arguments.append("shouldUpgrade: \(shouldUpgradeName)")
         }
 
-        arguments.append("onUpgrade: _\(metadata.innerName)")
+        arguments.append("onUpgrade: \(metadata.innerName)")
         return "\(builder).webSocket(\(arguments.joined(separator: ", ")))"
     }
 
@@ -99,14 +99,14 @@ extension RouterMacro {
     static func handlerDeclaration(for metadata: FunctionMetadata) -> DeclSyntax {
         // The generated wrapper is the boundary where the Router DSL becomes regular Vapor code.
         """
-        func _\(metadata.innerName)(\(raw: metadata.resolvedRequestKeyword): Vapor.Request) async throws -> \(raw: metadata.responseType) {\(metadata.resolvedContent)}
+        func \(metadata.innerName)(\(raw: metadata.resolvedRequestKeyword): Vapor.Request) async throws -> \(raw: metadata.responseType) {\(metadata.resolvedContent)}
         """
     }
 
     static func handlerDeclaration(for metadata: WebSocketMetadata) -> DeclSyntax {
         let eventRegistrations = metadata.events.map(webSocketEventRegistration(for:)).joined(separator: "\n")
         return """
-        func _\(metadata.innerName)(req: Vapor.Request, ws: Vapor.WebSocket) async {
+        func \(metadata.innerName)(req: Vapor.Request, ws: Vapor.WebSocket) async {
             let _ = req
             \(raw: eventRegistrations)
         }
@@ -129,12 +129,12 @@ extension RouterMacro {
             }
 
             return """
-            func _\(shouldUpgradeName)(\(raw: shouldUpgrade.resolvedRequestKeyword): Vapor.Request) async throws -> Vapor.HTTPHeaders? {\(resolvedBody)}
+            func \(shouldUpgradeName)(\(raw: shouldUpgrade.resolvedRequestKeyword): Vapor.Request) async throws -> Vapor.HTTPHeaders? {\(resolvedBody)}
             """
         }
 
         return """
-        func _\(shouldUpgradeName)(\(raw: shouldUpgrade.resolvedRequestKeyword): Vapor.Request) async throws -> Vapor.HTTPHeaders? {
+        func \(shouldUpgradeName)(\(raw: shouldUpgrade.resolvedRequestKeyword): Vapor.Request) async throws -> Vapor.HTTPHeaders? {
             \(raw: shouldUpgrade.expression.trimmedDescription)(\(raw: shouldUpgrade.resolvedRequestKeyword))
         }
         """

@@ -42,10 +42,10 @@ struct RouterMacroDiagnosticTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "test", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         return "ok"
                 }
             }
@@ -133,10 +133,10 @@ struct RouterMacroDiagnosticTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         let loader = {
                             let req = ServiceRequest()
                             return try req.parameters.require("slug")
@@ -205,10 +205,10 @@ struct RouterMacroDiagnosticTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         let slug = try req.parameters.require("slug")
                         return slug
                 }
@@ -254,10 +254,10 @@ struct RouterMacroDiagnosticTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         let key = "id"
                         let id = req.parameters.get(key)
                         return id
@@ -308,10 +308,10 @@ struct RouterMacroDiagnosticTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         let key = "slug"
                         let dynamic = req.parameters.get(key)
                         let slug = try req.parameters.require("slug")
@@ -361,10 +361,10 @@ struct RouterMacroDiagnosticTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         let key = "slug"
                         let slug = try req.parameters.require("slug")
                         let dynamic = req.parameters.get(key)

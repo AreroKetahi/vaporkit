@@ -23,10 +23,10 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "test", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "api", "test", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         "ok"
                 }
             }
@@ -110,27 +110,27 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "test", use: ___macro_local_12RouteHandlerfMu_)
-                    routes.on(.POST, "api", "test", "upload", use: ___macro_local_12RouteHandlerfMu0_)
-                    routes.on(.PATCH, "api", "something", ":id", use: ___macro_local_12RouteHandlerfMu1_)
-                    routes.on(.DELETE, "api", "item", use: ___macro_local_12RouteHandlerfMu2_)
+                    routes.on(.GET, "api", "test", use: __macro_local_12RouteHandlerfMu_)
+                    routes.on(.POST, "api", "test", "upload", use: __macro_local_12RouteHandlerfMu0_)
+                    routes.on(.PATCH, "api", "something", ":id", use: __macro_local_12RouteHandlerfMu1_)
+                    routes.on(.DELETE, "api", "item", use: __macro_local_12RouteHandlerfMu2_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         print(req.url)
                         return "ok"
                 }
 
-                func ___macro_local_12RouteHandlerfMu0_(request: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu0_(request: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         return "uploaded"
                 }
 
-                func ___macro_local_12RouteHandlerfMu1_(r: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu1_(r: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         let id = try r.parameters.require("id", as: UUID.self)
                         return id
                 }
 
-                func ___macro_local_12RouteHandlerfMu2_(__macro_local_7requestfMu2_: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu2_(__macro_local_7requestfMu2_: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         let result = try await __macro_local_7requestfMu2_.delete()
                         return result
                 }
@@ -165,15 +165,15 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", use: ___macro_local_12RouteHandlerfMu_)
-                    routes.on(.PATCH, "api", use: ___macro_local_12RouteHandlerfMu0_)
+                    routes.on(.GET, "api", use: __macro_local_12RouteHandlerfMu_)
+                    routes.on(.PATCH, "api", use: __macro_local_12RouteHandlerfMu0_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(__macro_local_7requestfMu_: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(__macro_local_7requestfMu_: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         "index"
                 }
 
-                func ___macro_local_12RouteHandlerfMu0_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu0_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         return req.method.string
                 }
             }
@@ -204,10 +204,10 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.grouped(AuthMiddleware(), RateLimitMiddleware()).on(.GET, "api", "profile", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.grouped(AuthMiddleware(), RateLimitMiddleware()).on(.GET, "api", "profile", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         req.url.path
                 }
             }
@@ -241,15 +241,15 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "health", use: ___macro_local_12RouteHandlerfMu_)
-                    routes.on(.POST, "api", "users", use: ___macro_local_12RouteHandlerfMu0_)
+                    routes.on(.GET, "api", "health", use: __macro_local_12RouteHandlerfMu_)
+                    routes.on(.POST, "api", "users", use: __macro_local_12RouteHandlerfMu0_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> HTTPStatus {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> HTTPStatus {
                         return .ok
                 }
 
-                func ___macro_local_12RouteHandlerfMu0_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu0_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         return "created"
                 }
             }
@@ -311,10 +311,10 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "users", ":id", "profile", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "users", ":id", "profile", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         let tenantID = try req.parameters.require("tenantID")
                         let id = try req.parameters.require("id")
                         return tenantID + ":" + id
@@ -347,10 +347,10 @@ struct RouterMacroExpansionTests {
             struct RouterDisabledRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "status", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "api", "status", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         try req.parameters.require("missing")
                 }
             }
@@ -375,10 +375,10 @@ struct RouterMacroExpansionTests {
             struct RouteDisabledRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "status", use: ___macro_local_12RouteHandlerfMu_)
+                    routes.on(.GET, "api", "status", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func ___macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
                         try req.parameters.require("missing")
                 }
             }
@@ -421,14 +421,14 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.grouped(AuthMiddleware()).webSocket("api", "chat", maxFrameSize: 4096, shouldUpgrade: ___macro_local_22WebSocketShouldUpgradefMu_, onUpgrade: ___macro_local_16WebSocketHandlerfMu_)
+                    routes.grouped(AuthMiddleware()).webSocket("api", "chat", maxFrameSize: 4096, shouldUpgrade: __macro_local_22WebSocketShouldUpgradefMu_, onUpgrade: __macro_local_16WebSocketHandlerfMu_)
                 }
 
-                func ___macro_local_22WebSocketShouldUpgradefMu_(req: Vapor.Request) async throws -> Vapor.HTTPHeaders? {
+                func __macro_local_22WebSocketShouldUpgradefMu_(req: Vapor.Request) async throws -> Vapor.HTTPHeaders? {
                         ["X-Trace": req.id.uuidString]
                 }
 
-                func ___macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
+                func __macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
                     let _ = req
                     ws.onText { ws, text in
                     await ws.send(text)
@@ -475,14 +475,14 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.webSocket("api", "chat", shouldUpgrade: ___macro_local_22WebSocketShouldUpgradefMu_, onUpgrade: ___macro_local_16WebSocketHandlerfMu_)
+                    routes.webSocket("api", "chat", shouldUpgrade: __macro_local_22WebSocketShouldUpgradefMu_, onUpgrade: __macro_local_16WebSocketHandlerfMu_)
                 }
 
-                func ___macro_local_22WebSocketShouldUpgradefMu_(req: Vapor.Request) async throws -> Vapor.HTTPHeaders? {
+                func __macro_local_22WebSocketShouldUpgradefMu_(req: Vapor.Request) async throws -> Vapor.HTTPHeaders? {
                         nil
                 }
 
-                func ___macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
+                func __macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
                     let _ = req
                     ws.onText { __macro_local_9webSocketfMu_, __macro_local_4textfMu_ in
                     await __macro_local_9webSocketfMu_.send(__macro_local_4textfMu_)
@@ -522,14 +522,14 @@ struct RouterMacroExpansionTests {
             struct MyRoute {
 
                 func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.webSocket("api", "chat", shouldUpgrade: ___macro_local_22WebSocketShouldUpgradefMu_, onUpgrade: ___macro_local_16WebSocketHandlerfMu_)
+                    routes.webSocket("api", "chat", shouldUpgrade: __macro_local_22WebSocketShouldUpgradefMu_, onUpgrade: __macro_local_16WebSocketHandlerfMu_)
                 }
 
-                func ___macro_local_22WebSocketShouldUpgradefMu_(__macro_local_7requestfMu_: Vapor.Request) async throws -> Vapor.HTTPHeaders? {
+                func __macro_local_22WebSocketShouldUpgradefMu_(__macro_local_7requestfMu_: Vapor.Request) async throws -> Vapor.HTTPHeaders? {
                         ["X-Trace": __macro_local_7requestfMu_.id.uuidString]
                 }
 
-                func ___macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
+                func __macro_local_16WebSocketHandlerfMu_(req: Vapor.Request, ws: Vapor.WebSocket) async {
                     let _ = req
                     ws.onClose.whenComplete { _ in
                     print("closed")

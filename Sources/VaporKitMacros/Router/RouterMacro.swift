@@ -12,7 +12,7 @@ import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 public struct RouterMacro {
-    /// Prefix used when generating unique handler names.
+    /// Base name used when generating unique handler names.
     static let generatedHandlerName = "RouteHandler"
 
     static let routerAttributeName = "Router"
