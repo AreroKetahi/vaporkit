@@ -6,8 +6,7 @@ import PackageDescription
 let package = Package(
     name: "vaporkit",
     platforms: [
-        .macOS(.v10_15), .iOS(.v13), .tvOS(.v13),
-        .watchOS(.v6), .macCatalyst(.v13),
+        .macOS(.v10_15),
     ],
     products: [
         .library(
