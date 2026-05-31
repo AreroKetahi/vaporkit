@@ -2,20 +2,11 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import MacroTesting
-import XCTest
+import Testing
 
-final class RouterMacroDiagnosticTests: XCTestCase {
-    override func invokeTest() {
-        #if canImport(VaporKitMacros)
-        withMacroTesting(macros: testMacros) {
-            super.invokeTest()
-        }
-        #else
-        super.invokeTest()
-        #endif
-    }
-
-    func testRequiresTrailingClosure() throws {
+@Suite(.macros(testMacros))
+struct RouterMacroDiagnosticTests {
+    @Test func requiresTrailingClosure() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -64,11 +55,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsClosureReferenceArgument() throws {
+    @Test func rejectsClosureReferenceArgument() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -88,11 +79,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsMissingRequiredPathParameterInFreestandingRoute() throws {
+    @Test func rejectsMissingRequiredPathParameterInFreestandingRoute() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -118,11 +109,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testIgnoresNestedClosureParameterAccess() throws {
+    @Test func ignoresNestedClosureParameterAccess() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -159,11 +150,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsMissingPathParameterAccessWithoutTry() throws {
+    @Test func rejectsMissingPathParameterAccessWithoutTry() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -193,11 +184,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testIgnoresBypassedParameterAccess() throws {
+    @Test func ignoresBypassedParameterAccess() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -228,11 +219,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testWarnsForDynamicPathParameterAccess() throws {
+    @Test func warnsForDynamicPathParameterAccess() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -278,11 +269,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testDowngradesParameterErrorsAndSuppressesWarnings() throws {
+    @Test func downgradesParameterErrorsAndSuppressesWarnings() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -333,11 +324,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testBypassWarningModeDowngradesOnlyWrappedErrors() throws {
+    @Test func bypassWarningModeDowngradesOnlyWrappedErrors() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -386,11 +377,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testWebSocketRequiresTrailingClosure() throws {
+    @Test func webSocketRequiresTrailingClosure() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -410,11 +401,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testWebSocketRejectsNonEventStatements() throws {
+    @Test func webSocketRejectsNonEventStatements() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -438,11 +429,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testWebSocketRejectsInvalidEventSignatures() throws {
+    @Test func webSocketRejectsInvalidEventSignatures() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -478,11 +469,11 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testWebSocketRejectsUnexpectedAdditionalTrailingClosureLabel() throws {
+    @Test func webSocketRejectsUnexpectedAdditionalTrailingClosureLabel() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -515,7 +506,7 @@ final class RouterMacroDiagnosticTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 }

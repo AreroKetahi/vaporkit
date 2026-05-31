@@ -48,7 +48,7 @@ struct RouteHandlerMacroTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -90,7 +90,7 @@ struct RouteHandlerMacroTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -120,7 +120,7 @@ struct RouteHandlerMacroTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -155,11 +155,11 @@ struct RouteHandlerMacroTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsMissingRequiredPathParameterInRouteHandler() throws {
+    @Test func rejectsMissingRequiredPathParameterInRouteHandler() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -173,26 +173,21 @@ struct RouteHandlerMacroTests {
             }
             """
         } diagnostics: {
-            "Required path parameter is not declared in this route URL."
-        } expansion: {
             """
+            @Router
             struct MyRoute {
+                @RouteHandler("users/:id", method: .GET)
                 func show(req: Request) throws -> String {
                     let slug = try req.parameters.require("slug")
+                                   ┬─────────────────────────────
+                                   ╰─ 🛑 Required path parameter is not declared in this route URL.
                     return slug
                 }
-            
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "users", ":id", use: show)
-                }
-            }
-            
-            extension MyRoute: Vapor.RouteCollection {
             }
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -229,7 +224,7 @@ struct RouteHandlerMacroTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 }

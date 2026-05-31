@@ -1,18 +1,20 @@
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxBuilder
-import XCTest
+import Testing
 
 #if canImport(VaporKitMacros)
 @testable import VaporKitMacros
 
-final class MacroHelperCoverageTests: XCTestCase {
-    func testCompilerPluginRegistersAllMacros() {
+@Suite
+struct MacroHelperCoverageTests {
+    @Test func compilerPluginRegistersAllMacros() {
         let plugin = VaporkitPlugin()
         let macroNames = plugin.providingMacros.map { String(describing: $0) }
 
-        XCTAssertEqual(
-            macroNames,
+        #expect(
+            macroNames
+            ==
             [
                 String(describing: RouterMacro.self),
                 String(describing: ValidatableMacro.self),
@@ -23,41 +25,42 @@ final class MacroHelperCoverageTests: XCTestCase {
         )
     }
 
-    func testDiagnosticIdentifiersExposeStableDomains() {
+    @Test func diagnosticIdentifiersExposeStableDomains() {
         let validatableID = ValidatableMacro.MacroDiagnostic.constraintRequiresRule.diagnosticID
-        XCTAssertFalse(String(reflecting: validatableID).isEmpty)
+        #expect(!String(reflecting: validatableID).isEmpty)
 
         let bypassID = BypassMacro.BypassDiagnostic.requiresTrailingClosure.diagnosticID
-        XCTAssertFalse(String(reflecting: bypassID).isEmpty)
+        #expect(!String(reflecting: bypassID).isEmpty)
     }
 
-    func testValidatableRuleHelpersHandleOptionalSpellings() {
-        XCTAssertEqual(
-            ValidatableMacro.propertyKind(for: TypeSyntax(stringLiteral: "String!")),
+    @Test func validatableRuleHelpersHandleOptionalSpellings() {
+        #expect(
+            ValidatableMacro.propertyKind(for: TypeSyntax(stringLiteral: "String!"))
+            ==
             .init(baseTypeName: "String", isOptional: true)
         )
-        XCTAssertEqual(
-            ValidatableMacro.propertyKind(for: TypeSyntax(stringLiteral: "Optional<Int>")),
+        #expect(
+            ValidatableMacro.propertyKind(for: TypeSyntax(stringLiteral: "Optional<Int>"))
+            ==
             .init(baseTypeName: "Int", isOptional: true)
         )
-        XCTAssertTrue(
+        #expect(
             ValidatableMacro.isRuleSupported(
                 "nil",
                 propertyKind: .init(baseTypeName: "String", isOptional: true)
             )
         )
-        XCTAssertTrue(
+        #expect(
             ValidatableMacro.isRuleSupported(
                 "in",
                 propertyKind: .init(baseTypeName: "Int", isOptional: false)
             )
         )
-        XCTAssertNil(ValidatableMacro.validatingTypeSyntax(from: ExprSyntax(stringLiteral: ".self")))
+        #expect(ValidatableMacro.validatingTypeSyntax(from: ExprSyntax(stringLiteral: ".self")) == nil)
     }
 
-    func testRouterHelpersHandleQualifiedAttributesAndUnderscoredRequestNames() throws {
-        let function = try XCTUnwrap(
-            FunctionDeclSyntax(
+    @Test func routerHelpersHandleQualifiedAttributesAndUnderscoredRequestNames() throws {
+        let function = try FunctionDeclSyntax(
                 """
                 @Demo.Middleware(AuthMiddleware())
                 @Demo.RouteHandler("users", ":id", method: .GET)
@@ -65,22 +68,22 @@ final class MacroHelperCoverageTests: XCTestCase {
                     true
                 }
                 """
-            )
         )
 
-        let routeAttribute = try XCTUnwrap(RouterMacro.routeHandlerAttribute(from: function.attributes))
-        XCTAssertEqual(RouterMacro.attributeName(of: routeAttribute), "RouteHandler")
-        XCTAssertEqual(RouterMacro.routeHandlerRequestKeyword(from: function.signature), "req")
-        XCTAssertEqual(
-            RouterMacro.middlewareExpressions(from: function.attributes).map(\.trimmedDescription),
+        let routeAttribute = try #require(RouterMacro.routeHandlerAttribute(from: function.attributes))
+        #expect(RouterMacro.attributeName(of: routeAttribute) == "RouteHandler")
+        #expect(RouterMacro.routeHandlerRequestKeyword(from: function.signature) == "req")
+        #expect(
+            RouterMacro.middlewareExpressions(from: function.attributes).map(\.trimmedDescription)
+            ==
             ["AuthMiddleware()"]
         )
-        XCTAssertTrue(RouterMacro.isSupportedRouteHandlerSignature(function.signature))
-        XCTAssertEqual(RouterMacro.routeSpec(from: routeAttribute).path, "users/:id")
-        XCTAssertEqual(RouterMacro.routeSpec(from: routeAttribute).method, "GET")
+        #expect(RouterMacro.isSupportedRouteHandlerSignature(function.signature))
+        #expect(RouterMacro.routeSpec(from: routeAttribute).path == "users/:id")
+        #expect(RouterMacro.routeSpec(from: routeAttribute).method == "GET")
     }
 
-    func testRouterHelpersRejectInvalidSignaturesAndMissingPrefixArguments() throws {
+    @Test func routerHelpersRejectInvalidSignaturesAndMissingPrefixArguments() throws {
         let invalidFunction = try FunctionDeclSyntax(
             """
             func show(req: Request, slug: String) -> Bool {
@@ -97,9 +100,9 @@ final class MacroHelperCoverageTests: XCTestCase {
         )
         let routerAttribute = AttributeSyntax("@Router")
 
-        XCTAssertFalse(RouterMacro.isSupportedRouteHandlerSignature(invalidFunction.signature))
-        XCTAssertFalse(RouterMacro.isSupportedRouteHandlerSignature(emptyFunction.signature))
-        XCTAssertNil(RouterMacro.routerPrefix(from: routerAttribute))
+        #expect(!RouterMacro.isSupportedRouteHandlerSignature(invalidFunction.signature))
+        #expect(!RouterMacro.isSupportedRouteHandlerSignature(emptyFunction.signature))
+        #expect(RouterMacro.routerPrefix(from: routerAttribute) == nil)
     }
 }
 #endif

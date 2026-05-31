@@ -76,7 +76,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -103,7 +103,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -129,7 +129,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -155,7 +155,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -179,7 +179,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -205,7 +205,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -231,7 +231,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -261,7 +261,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -287,7 +287,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
@@ -317,7 +317,7 @@ struct ValidatableMacroDiagnosticTests {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 }

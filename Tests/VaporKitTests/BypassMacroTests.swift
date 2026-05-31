@@ -2,20 +2,11 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import MacroTesting
-import XCTest
+import Testing
 
-final class BypassMacroTests: XCTestCase {
-    override func invokeTest() {
-        #if canImport(VaporKitMacros)
-        withMacroTesting(macros: testMacros) {
-            super.invokeTest()
-        }
-        #else
-        super.invokeTest()
-        #endif
-    }
-
-    func testExpandsWrappedExpression() throws {
+@Suite(.macros(testMacros))
+struct BypassMacroTests {
+    @Test func expandsWrappedExpression() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -27,11 +18,11 @@ final class BypassMacroTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testExpandsWrappedClosureArgument() throws {
+    @Test func expandsWrappedClosureArgument() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -43,11 +34,11 @@ final class BypassMacroTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsMissingTrailingClosure() throws {
+    @Test func rejectsMissingTrailingClosure() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -61,11 +52,11 @@ final class BypassMacroTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 
-    func testRejectsMultipleStatements() throws {
+    @Test func rejectsMultipleStatements() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
             """
@@ -84,7 +75,7 @@ final class BypassMacroTests: XCTestCase {
             """
         }
         #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
+        throw Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
 }
