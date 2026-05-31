@@ -96,6 +96,25 @@ private struct _ELFSectionBound: Sendable, ~Copyable {
     }
 }
 
+private func _emptyELFRouteRegisterAccessor(
+    _ outValue: UnsafeMutableRawPointer,
+    _ type: UnsafeRawPointer,
+    _ hint: UnsafeRawPointer?,
+    _ reserved: UInt
+) -> CBool {
+    false
+}
+
+@section("swift5_vpkt")
+@used
+private let _emptyELFRouteRegisterRecord: _RouteRegisterRecord = (
+    kind: 0,
+    version: 0,
+    accessor: unsafe _emptyELFRouteRegisterAccessor,
+    context: 0,
+    reserved: 0
+)
+
 @_silgen_name("__start_swift5_vpkt")
 private nonisolated(unsafe) var _swift5VPKTSectionStart: _ELFSectionBound
 
@@ -104,11 +123,11 @@ private nonisolated(unsafe) var _swift5VPKTSectionEnd: _ELFSectionBound
 
 private func _findELFRouteRecordSections() -> [UnsafeRawBufferPointer] {
     let range = unsafe _swift5VPKTSectionStart ..< _swift5VPKTSectionEnd
-    guard range.count > 0 else {
-        return []
+    guard unsafe range.count > 0 else {
+        return unsafe []
     }
     
-    return [
+    return unsafe [
         unsafe UnsafeRawBufferPointer(
             start: range.lowerBound,
             count: range.count
