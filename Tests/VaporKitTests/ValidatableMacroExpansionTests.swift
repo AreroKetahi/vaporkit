@@ -98,4 +98,77 @@ struct ValidatableMacroExpansionTests {
         try Test.cancel("macros are only supported when running tests for the host platform")
         #endif
     }
+
+    @Test func emitsPredicateValidationRule() throws {
+        #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @ValidatableModel
+            struct CreateUser {
+                @Constraint(.predicate(#Predicate<Int> { $0 >= 18 }), message: "Must be an adult")
+                var age: Int
+            }
+            """
+        } expansion: {
+            """
+            struct CreateUser {
+                var age: Int
+            
+                static func validations(_ validations: inout Vapor.Validations) {
+                    let __macro_local_10validationfMu_: Vapor.Validator<Int> = .predicate(#Predicate<Int> {
+                            $0 >= 18
+                        })
+                    validations.add("age", as: Int.self, is: __macro_local_10validationfMu_, customFailureDescription: "Must be an adult")
+                }
+            }
+            
+            extension CreateUser: Vapor.Validatable {
+            }
+            """
+        }
+        #else
+        try Test.cancel("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    @Test func emitsComposedAndExternalPredicateValidationRules() throws {
+        #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            let adultPredicate = #Predicate<Int> { $0 >= 18 }
+
+            @ValidatableModel
+            struct CreateUser {
+                @Constraint(.predicate(#Predicate<String> { !$0.isEmpty }) && .count(...32))
+                var name: String?
+
+                @Constraint(.predicate(adultPredicate))
+                var age: Int
+            }
+            """
+        } expansion: {
+            """
+            let adultPredicate = #Predicate<Int> { $0 >= 18 }
+            struct CreateUser {
+                var name: String?
+                var age: Int
+            
+                static func validations(_ validations: inout Vapor.Validations) {
+                    let __macro_local_10validationfMu_: Vapor.Validator<String> = .predicate(#Predicate<String> {
+                            !$0.isEmpty
+                        }) && .count(...32)
+                    validations.add("name", as: String.self, is: __macro_local_10validationfMu_, required: false)
+                    let __macro_local_10validationfMu0_: Vapor.Validator<Int> = .predicate(adultPredicate)
+                    validations.add("age", as: Int.self, is: __macro_local_10validationfMu0_)
+                }
+            }
+            
+            extension CreateUser: Vapor.Validatable {
+            }
+            """
+        }
+        #else
+        try Test.cancel("macros are only supported when running tests for the host platform")
+        #endif
+    }
 }

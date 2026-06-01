@@ -15,7 +15,7 @@ extension ValidatableMacro {
     }
 
     static func validationStatement(for entry: ValidationEntry) -> String {
-        let validationType = effectiveValidationType(for: entry)
+        let validationType = validationType(for: entry)
         let validatorName = entry.validatorName.text
         var arguments = [
             "\"\(entry.propertyName)\"",
@@ -42,6 +42,10 @@ extension ValidatableMacro {
             return required
         }
 
+        if usesNilRule(entry.validatorExpression) {
+            return nil
+        }
+
         if isOptionalType(entry.propertyType) {
             return ExprSyntax(BooleanLiteralExprSyntax(literal: .keyword(.false)))
         }
@@ -51,6 +55,14 @@ extension ValidatableMacro {
 
     static func effectiveValidationType(for entry: ValidationEntry) -> TypeSyntax {
         effectiveValidationType(for: entry.propertyType)
+    }
+
+    static func validationType(for entry: ValidationEntry) -> TypeSyntax {
+        if usesNilRule(entry.validatorExpression) {
+            return entry.propertyType
+        }
+
+        return effectiveValidationType(for: entry)
     }
 
     static func effectiveValidationType(for propertyType: TypeSyntax) -> TypeSyntax {
@@ -77,5 +89,44 @@ extension ValidatableMacro {
         }
 
         return true
+    }
+
+    static func usesNilRule(_ expression: ExprSyntax) -> Bool {
+        containsRule(named: "nil", in: Syntax(expression))
+    }
+
+    static func containsRule(named ruleName: String, in syntax: Syntax) -> Bool {
+        if let memberAccess = syntax.as(MemberAccessExprSyntax.self),
+           memberAccess.declName.baseName.text == ruleName {
+            return true
+        }
+
+        if let functionCall = syntax.as(FunctionCallExprSyntax.self) {
+            if containsRule(named: ruleName, in: Syntax(functionCall.calledExpression)) {
+                return true
+            }
+
+            return functionCall.arguments.contains {
+                containsRule(named: ruleName, in: Syntax($0.expression))
+            }
+        }
+
+        if let sequence = syntax.as(SequenceExprSyntax.self) {
+            return sequence.elements.contains {
+                containsRule(named: ruleName, in: Syntax($0))
+            }
+        }
+
+        if let prefix = syntax.as(PrefixOperatorExprSyntax.self) {
+            return containsRule(named: ruleName, in: Syntax(prefix.expression))
+        }
+
+        if let tuple = syntax.as(TupleExprSyntax.self) {
+            return tuple.elements.contains {
+                containsRule(named: ruleName, in: Syntax($0.expression))
+            }
+        }
+
+        return false
     }
 }
