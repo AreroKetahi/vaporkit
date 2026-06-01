@@ -21,6 +21,7 @@ public struct ValidatableMacro {
         case constraintRequiresRule = "@Constraint requires a validation rule as its first argument."
         case constraintMessageMustBeStringLiteral = "@Constraint message must be a string literal or nil."
         case ruleNotSupportedForType = "@Constraint rule is not supported for this property type."
+        case predicateTypeMismatch = "@Constraint predicate type must match the property type."
         case customConstraintRequiresType = "@Constraint(validating:with:) requires an explicit validating type."
         case customConstraintRequiresClosure = "@Constraint(validating:with:) requires a closure passed with the 'with' argument."
         case customConstraintTypeMismatch = "@Constraint(validating:with:) type must match the property type."

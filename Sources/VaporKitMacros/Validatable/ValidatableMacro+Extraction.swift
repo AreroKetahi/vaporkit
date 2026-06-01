@@ -100,6 +100,13 @@ extension ValidatableMacro {
             return nil
         }
 
+        if let mismatchedPredicateType = firstMismatchedPredicateType(in: rule, propertyType: propertyType) {
+            context.diagnose(
+                Diagnostic(node: mismatchedPredicateType, message: MacroDiagnostic.predicateTypeMismatch)
+            )
+            return nil
+        }
+
         return ValidationEntry(
             propertyName: propertyName,
             propertyType: propertyType,
