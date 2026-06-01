@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Vapor
 
 /// Describes a Vapor validation rule expression.
 ///
@@ -63,6 +64,12 @@ public struct ValidationRule: Sendable, Equatable, Hashable, CustomStringConvert
         ///
         /// Represents `lhs || rhs` in a generated validation expression.
         case or(ValidationRule, ValidationRule)
+
+        /// A Foundation predicate validator.
+        ///
+        /// Represents `.predicate(...)` in a generated validation expression.
+        @available(macOS 14.0, *)
+        case predicate
     }
 
     /// The structural form of this rule.
@@ -111,6 +118,8 @@ public struct ValidationRule: Sendable, Equatable, Hashable, CustomStringConvert
         case let .or(lhs, rhs):
             let rendered = "\(_describe(lhs, in: .binary)) || \(_describe(rhs, in: .binary))"
             return context == .binary ? "(\(rendered))" : rendered
+        case .predicate:
+            return ".predicate(<predicate>)"
         }
     }
 
@@ -195,75 +204,5 @@ public struct ValidationRule: Sendable, Equatable, Hashable, CustomStringConvert
     /// - Returns: A validation rule that renders an integer membership validator.
     public static func `in`(_ values: Int...) -> Self {
         ._call("in", arguments: values.map { Argument(String($0)) })
-    }
-}
-
-/// Negates a validation rule.
-///
-/// Use `!` to render Vapor's rule negation for a `ValidationRule`.
-///
-/// - Parameter rule: The rule to negate.
-/// - Returns: A validation rule that renders the negated expression.
-public prefix func ! (rule: ValidationRule) -> ValidationRule {
-    .init(kind: .not(rule))
-}
-
-/// Combines two validation rules with logical AND.
-///
-/// Use `&&` to require both validation rules to pass.
-///
-/// - Parameters:
-///   - lhs: The left-hand validation rule.
-///   - rhs: The right-hand validation rule.
-/// - Returns: A validation rule that renders the conjunction.
-public func && (lhs: ValidationRule, rhs: ValidationRule) -> ValidationRule {
-    .init(kind: .and(lhs, rhs))
-}
-
-/// Combines two validation rules with logical OR.
-///
-/// Use `||` to accept values that satisfy either validation rule.
-///
-/// - Parameters:
-///   - lhs: The left-hand validation rule.
-///   - rhs: The right-hand validation rule.
-/// - Returns: A validation rule that renders the disjunction.
-public func || (lhs: ValidationRule, rhs: ValidationRule) -> ValidationRule {
-    .init(kind: .or(lhs, rhs))
-}
-
-private extension ValidationRule {
-    private static func _member(_ name: String) -> Self {
-        .init(kind: .member(name))
-    }
-
-    private static func _call(_ name: String, arguments: [Argument]) -> Self {
-        .init(kind: .call(name: name, arguments: arguments))
-    }
-
-    private static func _renderRangeExpression<T: Comparable>(_ bounds: some RangeExpression<T>) -> String {
-        let opaqueBounds = bounds as Any
-
-        if let range = opaqueBounds as? ClosedRange<T> {
-            return "\(String(describing: range.lowerBound))...\(String(describing: range.upperBound))"
-        }
-
-        if let range = opaqueBounds as? Range<T> {
-            return "\(String(describing: range.lowerBound))..<\(String(describing: range.upperBound))"
-        }
-
-        if let range = opaqueBounds as? PartialRangeFrom<T> {
-            return "\(String(describing: range.lowerBound))..."
-        }
-
-        if let range = opaqueBounds as? PartialRangeThrough<T> {
-            return "...\(String(describing: range.upperBound))"
-        }
-
-        if let range = opaqueBounds as? PartialRangeUpTo<T> {
-            return "..<\(String(describing: range.upperBound))"
-        }
-
-        return String(describing: bounds)
     }
 }

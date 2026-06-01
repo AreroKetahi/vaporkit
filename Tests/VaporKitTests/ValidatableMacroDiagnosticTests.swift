@@ -235,6 +235,32 @@ struct ValidatableMacroDiagnosticTests {
         #endif
     }
 
+    @Test func rejectsExplicitPredicateTypeMismatch() throws {
+        #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @ValidatableModel
+            struct CreateUser {
+                @Constraint(.predicate(#Predicate<String> { !$0.isEmpty }))
+                var age: Int
+            }
+            """
+        } diagnostics: {
+            """
+            @ValidatableModel
+            struct CreateUser {
+                @Constraint(.predicate(#Predicate<String> { !$0.isEmpty }))
+                                                  ┬─────
+                                                  ╰─ 🛑 @Constraint predicate type must match the property type.
+                var age: Int
+            }
+            """
+        }
+        #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     @Test func rejectsCustomConstraintTypeMismatch() throws {
         #if canImport(VaporKitMacros)
         assertMacro {

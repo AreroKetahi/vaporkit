@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 @testable import VaporKit
 
 @Suite struct ValidationRuleTests {
@@ -23,6 +24,14 @@ import Testing
             ==
             ".characterSet(<CFCharacterSet Predefined DecimalDigit Set>)"
         )
+    }
+
+    @available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, visionOS 1.0, *)
+    @Test func predicateRulePreservesStableDescription() {
+        let rule = ValidationRule.predicate(#Predicate<Int> { $0 >= 18 })
+
+        #expect(rule.description == ".predicate(<predicate>)")
+        #expect(rule == .init(kind: .predicate))
     }
 
     @Test func compositeRulesBuildAnActualRuleTree() {

@@ -14,12 +14,18 @@ extension ValidatableMacro {
         return firstUnsupportedRule(in: Syntax(expression), propertyKind: propertyKind)
     }
 
+    static func firstMismatchedPredicateType(in expression: ExprSyntax, propertyType: TypeSyntax) -> Syntax? {
+        let expectedType = effectiveValidationType(for: propertyType)
+        return firstMismatchedPredicateType(in: Syntax(expression), expectedType: expectedType)
+    }
+
     static func firstUnsupportedRule(in syntax: Syntax, propertyKind: PropertyKind) -> Syntax? {
         if let functionCall = syntax.as(FunctionCallExprSyntax.self) {
             if let memberAccess = functionCall.calledExpression.as(MemberAccessExprSyntax.self),
-               let ruleName = ruleName(from: memberAccess),
-               !isRuleSupported(ruleName, propertyKind: propertyKind) {
-                return Syntax(functionCall)
+               let ruleName = ruleName(from: memberAccess) {
+                return isRuleSupported(ruleName, propertyKind: propertyKind)
+                    ? nil
+                    : Syntax(functionCall)
             }
 
             return functionCall.arguments.lazy.compactMap {
@@ -52,6 +58,50 @@ extension ValidatableMacro {
         return nil
     }
 
+    static func firstMismatchedPredicateType(in syntax: Syntax, expectedType: TypeSyntax) -> Syntax? {
+        if let functionCall = syntax.as(FunctionCallExprSyntax.self) {
+            if let memberAccess = functionCall.calledExpression.as(MemberAccessExprSyntax.self),
+               ruleName(from: memberAccess) == "predicate",
+               let predicateType = explicitPredicateType(from: functionCall) {
+                return normalizeTypeName(predicateType) == normalizeTypeName(expectedType)
+                    ? nil
+                    : Syntax(predicateType)
+            }
+
+            return functionCall.arguments.lazy.compactMap {
+                firstMismatchedPredicateType(in: Syntax($0.expression), expectedType: expectedType)
+            }.first
+        }
+
+        if let sequence = syntax.as(SequenceExprSyntax.self) {
+            return sequence.elements.lazy.compactMap {
+                firstMismatchedPredicateType(in: Syntax($0), expectedType: expectedType)
+            }.first
+        }
+
+        if let prefix = syntax.as(PrefixOperatorExprSyntax.self) {
+            return firstMismatchedPredicateType(in: Syntax(prefix.expression), expectedType: expectedType)
+        }
+
+        if let tuple = syntax.as(TupleExprSyntax.self) {
+            return tuple.elements.lazy.compactMap {
+                firstMismatchedPredicateType(in: Syntax($0.expression), expectedType: expectedType)
+            }.first
+        }
+
+        return nil
+    }
+
+    static func explicitPredicateType(from functionCall: FunctionCallExprSyntax) -> TypeSyntax? {
+        guard let predicateExpression = functionCall.arguments.first?.expression.as(MacroExpansionExprSyntax.self),
+              predicateExpression.macroName.text == "Predicate",
+              let genericArgument = predicateExpression.genericArgumentClause?.arguments.onlyElement else {
+            return nil
+        }
+
+        return genericArgument.argument.as(TypeSyntax.self)
+    }
+
     static func ruleName(from memberAccess: MemberAccessExprSyntax) -> String? {
         memberAccess.declName.baseName.text
     }
@@ -67,6 +117,8 @@ extension ValidatableMacro {
         case "nil":
             propertyKind.isOptional
         case "in":
+            true
+        case "predicate":
             true
         default:
             false
