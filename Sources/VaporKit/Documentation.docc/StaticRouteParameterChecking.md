@@ -104,7 +104,8 @@ syntax alone. Prefer a string literal when the name is fixed:
 }
 ```
 
-If the dynamic name is intentional, wrap just that expression in ``Bypass(as:_:)``:
+If the dynamic name is intentional, wrap just that expression or block in
+``Bypass(as:_:)``:
 
 ```swift
 #Get(":id") { req in
@@ -169,14 +170,16 @@ struct LegacyRoutes {
 
 ## Local Bypass
 
-Use ``Bypass(as:_:)`` when only one expression should be excluded from static
-analysis.
+Use ``Bypass(as:_:)`` when one expression or a local code block should be
+excluded from static analysis.
 
 ```swift
 #Get(":id") { req in
     let key = resolveParameterName()
     return #Bypass {
+        let fallback = req.parameters.get("id")
         req.parameters.get(key)
+            ?? fallback
     }
 }
 ```
