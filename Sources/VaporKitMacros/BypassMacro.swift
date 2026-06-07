@@ -13,7 +13,6 @@ extension BypassMacro {
 
     enum BypassDiagnostic: String, DiagnosticMessage {
         case requiresTrailingClosure = "#Bypass requires a trailing closure."
-        case requiresSingleExpression = "#Bypass only supports a single expression in its closure body."
 
         var message: String { rawValue }
         var diagnosticID: MessageID { .init(domain: DiagnosticDomain.domain, id: "\(self)") }
@@ -38,18 +37,16 @@ extension BypassMacro: ExpressionMacro {
             return "()"
         }
 
-        guard closure.statements.count == 1,
-              let onlyStatement = closure.statements.first,
-              let expression = onlyStatement.item.as(ExprSyntax.self)
-        else {
-            context.diagnose(
-                Diagnostic(node: Syntax(node), message: BypassDiagnostic.requiresSingleExpression)
-            )
-            return "()"
+        if closure.statements.count == 1,
+           let onlyStatement = closure.statements.first,
+           let expression = onlyStatement.item.as(ExprSyntax.self)
+        {
+            // Preserve the historical identity expansion for single-expression bypasses.
+            return expression
         }
 
-        // `#Bypass` is intentionally a pure identity macro. Its only job is to leave a syntax
-        // marker for analyzers and then erase itself during expansion.
-        return expression
+        // Multi-statement bypasses preserve the original closure boundary by immediately
+        // invoking the supplied closure after the syntax-only marker has been erased.
+        return ExprSyntax("\(closure)()")
     }
 }

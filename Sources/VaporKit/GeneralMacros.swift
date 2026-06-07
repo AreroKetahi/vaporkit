@@ -5,19 +5,23 @@
 //  Created by Arkivili Collindort on 01/04/2026
 //
 
-/// Bypasses syntax-only macro checks for a single expression.
+/// Bypasses syntax-only macro checks for an expression or code block.
 ///
-/// Wrap an expression in `#Bypass` when a local static check is too narrow for a
-/// specific expression. The macro expands to the wrapped expression, so runtime
-/// behavior is unchanged while checks such as route-parameter validation ignore
-/// the wrapped syntax.
+/// Wrap code in `#Bypass` when a local static check is too narrow for a specific
+/// expression or block. Single-expression closures expand to the wrapped
+/// expression, and multi-statement closures expand to an immediately invoked
+/// closure, so runtime behavior is unchanged while checks such as route-parameter
+/// validation ignore the wrapped syntax.
 ///
 /// - Parameters:
 ///   - severity: The highest severity to silence or downgrade.
-///   - action: The expression to emit without local static checking.
+///   - action: The expression or block to emit without local static checking.
 /// - Returns: The value produced by `action`.
 @freestanding(expression)
-public macro Bypass<T>(as severity: StaticCheckSeverity = .error, _ action: () -> T) -> T = #externalMacro(module: "VaporKitMacros", type: "BypassMacro")
+public macro Bypass<T, E: Error>(
+    as severity: StaticCheckSeverity = .error,
+    _ action: () async throws(E) -> T
+) -> T = #externalMacro(module: "VaporKitMacros", type: "BypassMacro")
 
 /// Marks a ``Router(_:)`` type for runtime auto-registration.
 ///

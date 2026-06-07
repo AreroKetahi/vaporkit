@@ -203,11 +203,12 @@ struct LegacyRoutes {
 }
 ```
 
-Use `#Bypass` when only one expression should be skipped.
+Use `#Bypass` when one expression or local code block should be skipped.
 
 ```swift
 let value = #Bypass {
-    try req.parameters.require(dynamicName)
+    let fallback = try req.parameters.require("id")
+    return req.parameters.get(dynamicName) ?? fallback
 }
 ```
 
