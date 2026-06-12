@@ -65,6 +65,19 @@ All of those forms are supported.
 > You can use any closure identifier in handler declarations,
 > even `$0`, and result type is optional also.
 
+You can also define a route as a parameterized handler function. This keeps the
+handler as a regular method while ``Router(_:)`` generates the Vapor route
+registration and path parameter extraction.
+
+```swift
+@Get("users/:id")
+func find(req: Request, @Path("id") id: UUID) async throws -> UserDTO {
+    try await loadUser(id, on: req.db)
+}
+```
+
+For the full typed handler syntax, see <doc:UsingParameterInFunction>.
+
 ### Customize Routing
 
 ``Router(_:)`` accepts a string literal that defines the base path for the
@@ -284,3 +297,4 @@ If you want to silence one expression, use
 
 - <doc:MigratingFromVaporRouting>
 - <doc:StaticRouteParameterChecking>
+- <doc:UsingParameterInFunction>

@@ -11,9 +11,7 @@
 /// choose whether static route-parameter diagnostics should be fully disabled
 /// or downgraded to warnings.
 public enum StaticCheckSeverity {
-    /// Silences static-check errors and warnings.
-    ///
-    /// This is the default behavior for explicit check bypasses.
+    /// All the warnings and errors will display as usual.
     case error
 
     /// Downgrades static-check errors to warnings and silences lower-severity warnings.
@@ -21,4 +19,9 @@ public enum StaticCheckSeverity {
     /// Use this mode when a route should still surface likely mismatches without
     /// failing compilation.
     case warning
+    
+    /// Silences static-check errors and warnings.
+    ///
+    /// This is the default behavior for explicit check bypasses.
+    case none
 }

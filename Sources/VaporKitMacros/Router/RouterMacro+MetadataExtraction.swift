@@ -99,6 +99,83 @@ extension RouterMacro {
         )
     }
 
+    static func typedHandlerMethodMetadata(
+        from member: MemberBlockItemSyntax,
+        routerPrefix: String?,
+        context: some MacroExpansionContext
+    ) -> TypedHandlerMethodMetadata? {
+        guard let function = member.decl.as(FunctionDeclSyntax.self),
+              let routeAttribute = typedRouteAttribute(from: function.attributes),
+              let macroNameText = attributeName(of: routeAttribute),
+              let macroName = RouteMacroName(rawValue: macroNameText)
+        else {
+            return nil
+        }
+
+        guard let requestParameter = typedRouteRequestParameter(from: function.signature) else {
+            context.diagnose(
+                Diagnostic(
+                    node: Syntax(function),
+                    message: RouteMacroDiagnostic.typedRouteRequiresRequestParameter
+                )
+            )
+            return nil
+        }
+
+        let remainingParameters = Array(function.signature.parameterClause.parameters.dropFirst())
+        var pathParameters: [PathParameterMetadata] = []
+        for parameter in remainingParameters {
+            guard let pathAttribute = pathAttribute(from: parameter.attributes) else {
+                context.diagnose(
+                    Diagnostic(
+                        node: Syntax(parameter),
+                        message: RouteMacroDiagnostic.typedRouteRequiresPathParameterAttribute
+                    )
+                )
+                return nil
+            }
+
+            guard let pathName = pathParameterName(from: pathAttribute) else {
+                context.diagnose(
+                    Diagnostic(
+                        node: Syntax(pathAttribute),
+                        message: RouteMacroDiagnostic.typedRoutePathRequiresLiteralName
+                    )
+                )
+                return nil
+            }
+
+            pathParameters.append(
+                PathParameterMetadata(
+                    externalName: externalParameterName(from: parameter),
+                    localName: localParameterName(from: parameter),
+                    pathName: pathName,
+                    type: parameter.type,
+                    generatedName: context.makeUniqueName(localParameterName(from: parameter)),
+                    pathAttribute: pathAttribute
+                )
+            )
+        }
+
+        let routeSpec = routeSpec(from: routeAttribute, macroName: macroName)
+        return TypedHandlerMethodMetadata(
+            path: joinedURL(routerPrefix, routeSpec.path),
+            method: routeSpec.method,
+            middlewares: middlewareExpressions(from: function.attributes),
+            requestParameter: requestParameter,
+            pathParameters: pathParameters,
+            parameterCheckOverride: staticCheckOverride(
+                named: disableParameterCheckAttributeName,
+                in: function.attributes
+            ),
+            functionName: function.name,
+            wrapperName: context.makeUniqueName(function.name.text),
+            explicitReturnType: function.signature.returnClause?.type.trimmedDescription,
+            isAsync: function.signature.effectSpecifiers?.asyncSpecifier != nil,
+            isThrowing: function.signature.effectSpecifiers?.throwsClause != nil
+        )
+    }
+
     static func registeredRouterMetadata(
         from member: MemberBlockItemSyntax,
         routerPrefix: String?
@@ -351,6 +428,40 @@ extension RouterMacro {
         }
     }
 
+    static func typedRouteAttribute(from attributes: AttributeListSyntax)
+        -> AttributeSyntax?
+    {
+        attributes.compactMap { element in
+            element.as(AttributeSyntax.self)
+        }.first { attribute in
+            guard let name = attributeName(of: attribute) else {
+                return false
+            }
+
+            return RouteMacroName(rawValue: name) != nil
+        }
+    }
+
+    static func pathAttribute(from attributes: AttributeListSyntax)
+        -> AttributeSyntax?
+    {
+        attributes.compactMap { element in
+            element.as(AttributeSyntax.self)
+        }.first { attribute in
+            attributeName(of: attribute) == typedPathAttributeName
+        }
+    }
+
+    static func pathParameterName(from attribute: AttributeSyntax) -> String? {
+        guard case .argumentList(let arguments) = attribute.arguments,
+              let firstArgument = arguments.first(where: { $0.label == nil })
+        else {
+            return nil
+        }
+
+        return stringLiteralValue(from: firstArgument.expression)
+    }
+
     static func middlewareExpressions(from attributes: AttributeListSyntax)
         -> [ExprSyntax]
     {
@@ -450,6 +561,37 @@ extension RouterMacro {
         }
 
         return firstParameter.firstName.text
+    }
+
+    static func typedRouteRequestParameter(
+        from signature: FunctionSignatureSyntax
+    ) -> FunctionParameterMetadata? {
+        guard let firstParameter = signature.parameterClause.parameters.first,
+              isRequestParameter(firstParameter)
+        else {
+            return nil
+        }
+
+        return FunctionParameterMetadata(
+            externalName: externalParameterName(from: firstParameter),
+            localName: localParameterName(from: firstParameter)
+        )
+    }
+
+    static func isRequestParameter(_ parameter: FunctionParameterSyntax) -> Bool {
+        let typeName = parameter.type.trimmedDescription.filter {
+            !$0.isWhitespace
+        }
+        return typeName == "Request" || typeName == "Vapor.Request"
+    }
+
+    static func externalParameterName(from parameter: FunctionParameterSyntax) -> String? {
+        let firstName = parameter.firstName.text
+        return firstName == "_" ? nil : firstName
+    }
+
+    static func localParameterName(from parameter: FunctionParameterSyntax) -> String {
+        parameter.secondName?.text ?? parameter.firstName.text
     }
 
     static func isSupportedRouteHandlerSignature(

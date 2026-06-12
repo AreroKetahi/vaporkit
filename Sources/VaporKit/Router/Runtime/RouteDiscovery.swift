@@ -24,6 +24,16 @@ public enum _RouteDiscovery {
         guard unsafe record.version == version else { return nil }
         let accessor = unsafe record.accessor
         
+        #if swift(>=6.4)
+        return withUnsafeTemporaryAllocation(of: _RouteDescriptor.self, capacity: 1) { buffer in
+            let initialized = withUnsafePointer(to: _RouteDescriptor.self) { type in
+                unsafe accessor(buffer.baseAddress!, UnsafeRawPointer(type), nil, 0)
+            }
+            
+            guard initialized else { return nil }
+            return unsafe buffer.baseAddress!.move()
+        }
+        #else
         return unsafe withUnsafeTemporaryAllocation(of: _RouteDescriptor.self, capacity: 1) { buffer in
             let initialized = unsafe withUnsafePointer(to: _RouteDescriptor.self) { type in
                 unsafe accessor(buffer.baseAddress!, UnsafeRawPointer(type), nil, 0)
@@ -32,5 +42,6 @@ public enum _RouteDiscovery {
             guard initialized else { return nil }
             return unsafe buffer.baseAddress!.move()
         }
+        #endif
     }
 }

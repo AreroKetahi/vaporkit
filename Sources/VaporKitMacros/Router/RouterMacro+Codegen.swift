@@ -7,6 +7,7 @@ extension RouterMacro {
     static func bootDeclaration(
         for functions: [FunctionMetadata],
         handlerMethods: [HandlerMethodMetadata],
+        typedHandlerMethods: [TypedHandlerMethodMetadata],
         registeredRouters: [RegisteredRouterMetadata],
         webSockets: [WebSocketMetadata]
     ) -> DeclSyntax {
@@ -15,6 +16,7 @@ extension RouterMacro {
         let registrations = (
             functions.map(routeRegistration(for:)) +
             handlerMethods.map(routeRegistration(for:)) +
+            typedHandlerMethods.map(routeRegistration(for:)) +
             registeredRouters.flatMap(routeRegistrations(for:)) +
             webSockets.map(routeRegistration(for:))
         ).joined(separator: "\n")
@@ -44,6 +46,16 @@ extension RouterMacro {
         }
 
         return "\(builder).on(.\(metadata.method), \(path), use: \(metadata.functionName))"
+    }
+
+    static func routeRegistration(for metadata: TypedHandlerMethodMetadata) -> String {
+        let path = splitURL(metadata.path)
+        let builder = routeBuilderExpression(from: metadata.middlewares)
+        guard !path.isEmpty else {
+            return "\(builder).on(.\(metadata.method), use: \(metadata.wrapperName))"
+        }
+
+        return "\(builder).on(.\(metadata.method), \(path), use: \(metadata.wrapperName))"
     }
 
     static func routeRegistration(for metadata: WebSocketMetadata) -> String {
@@ -100,6 +112,30 @@ extension RouterMacro {
         // The generated wrapper is the boundary where the Router DSL becomes regular Vapor code.
         """
         func \(metadata.innerName)(\(raw: metadata.resolvedRequestKeyword): Vapor.Request) async throws -> \(raw: metadata.responseType) {\(metadata.resolvedContent)}
+        """
+    }
+
+    static func handlerDeclaration(for metadata: TypedHandlerMethodMetadata) -> DeclSyntax {
+        let requestParameter = renderedParameter(metadata.requestParameter)
+        let requestLocalName = metadata.requestParameter.localName
+        let extractions = metadata.pathParameters.map { parameter in
+            """
+            let \(parameter.generatedName) = try \(requestLocalName).parameters.require("\(parameter.pathName)", as: \(parameter.type.trimmedDescription).self)
+            """
+        }.joined(separator: "\n")
+        let arguments = (
+            [renderedArgument(metadata.requestParameter, value: requestLocalName)] +
+            metadata.pathParameters.map { parameter in
+                renderedArgument(parameter, value: parameter.generatedName.text)
+            }
+        ).joined(separator: ", ")
+        let callPrefix = "\(metadata.isThrowing ? "try " : "")\(metadata.isAsync ? "await " : "")"
+
+        return """
+        func \(metadata.wrapperName)(\(raw: requestParameter): Vapor.Request) async throws -> \(raw: metadata.responseType) {
+            \(raw: extractions)
+            return \(raw: callPrefix)\(metadata.functionName)(\(raw: arguments))
+        }
         """
     }
 
@@ -176,6 +212,34 @@ extension RouterMacro {
         }
         let lastLine = lines.last?.trimmingCharacters(in: .whitespaces) ?? "}"
         return ([firstLine] + bodyLines + [lastLine]).joined(separator: "\n")
+    }
+
+    static func renderedParameter(_ parameter: FunctionParameterMetadata) -> String {
+        guard let externalName = parameter.externalName else {
+            return "_ \(parameter.localName)"
+        }
+
+        if externalName == parameter.localName {
+            return parameter.localName
+        }
+
+        return "\(externalName) \(parameter.localName)"
+    }
+
+    static func renderedArgument(_ parameter: FunctionParameterMetadata, value: String) -> String {
+        guard let externalName = parameter.externalName else {
+            return value
+        }
+
+        return "\(externalName): \(value)"
+    }
+
+    static func renderedArgument(_ parameter: PathParameterMetadata, value: String) -> String {
+        guard let externalName = parameter.externalName else {
+            return value
+        }
+
+        return "\(externalName): \(value)"
     }
 
     static func nominalTypeName(of declaration: some DeclGroupSyntax) -> String? {

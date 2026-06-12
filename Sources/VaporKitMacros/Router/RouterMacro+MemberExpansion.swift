@@ -26,6 +26,9 @@ extension RouterMacro: MemberMacro {
         let handlerMethods = declaration.memberBlock.members.compactMap {
             handlerMethodMetadata(from: $0, routerPrefix: routerPrefix, context: context)
         }
+        let typedHandlerMethods = declaration.memberBlock.members.compactMap {
+            typedHandlerMethodMetadata(from: $0, routerPrefix: routerPrefix, context: context)
+        }
         let registeredRouters = declaration.memberBlock.members.compactMap {
             registeredRouterMetadata(from: $0, routerPrefix: routerPrefix)
         }
@@ -46,6 +49,12 @@ extension RouterMacro: MemberMacro {
                 override: routerParameterCheckOverride,
                 context: context
             )
+            validateRequiredParameters(
+                in: typedHandlerMethods,
+                forwardedParameters: forwardedParameters,
+                override: routerParameterCheckOverride,
+                context: context
+            )
         }
 
         // Existing `@RouteHandler` functions already exist in source, so only freestanding
@@ -54,11 +63,13 @@ extension RouterMacro: MemberMacro {
             bootDeclaration(
                 for: declarationFunctions,
                 handlerMethods: handlerMethods,
+                typedHandlerMethods: typedHandlerMethods,
                 registeredRouters: registeredRouters,
                 webSockets: webSockets
             )
         ]
         result.append(contentsOf: declarationFunctions.map(handlerDeclaration(for:)))
+        result.append(contentsOf: typedHandlerMethods.map(handlerDeclaration(for:)))
         result.append(contentsOf: webSockets.compactMap(shouldUpgradeDeclaration(for:)))
         result.append(contentsOf: webSockets.map(handlerDeclaration(for:)))
         return result
