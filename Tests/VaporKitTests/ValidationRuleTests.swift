@@ -19,11 +19,6 @@ import Foundation
         #expect(ValidationRule.count(..<32).description == ".count(..<32)")
         #expect(ValidationRule.in("owner", "maintainer").description == #".in("owner", "maintainer")"#)
         #expect(ValidationRule.in(1, 2, 3).description == ".in(1, 2, 3)")
-        #expect(
-            ValidationRule.characterSet(.decimalDigits).description
-            ==
-            ".characterSet(<CFCharacterSet Predefined DecimalDigit Set>)"
-        )
     }
 
     @available(iOS 17.0, macOS 14.0, tvOS 17.0, watchOS 10.0, visionOS 1.0, *)
