@@ -24,6 +24,7 @@ and model rules.
 ### Route Collection
 
 - <doc:CreateRouter>
+- <doc:UsingParameterInFunction>
 - ``Router(_:)``
 - ``AutoRegisterable()``
 - ``Vapor/Application/autoRegisterRouters()``

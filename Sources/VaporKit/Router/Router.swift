@@ -101,27 +101,108 @@ public macro Delete<T: AsyncResponseEncodable>(
 
 // MARK: - Typed Parameter Injection
 
+/// Marks a typed handler function as a route for an explicit HTTP method.
+///
+/// Attach `@On` to a function inside a ``Router(_:)`` type when the route
+/// method is not covered by a method-specific helper. The function must accept
+/// a `Request` or `Vapor.Request` parameter first. Additional route path
+/// parameters must be marked with ``Path``.
+///
+/// ``Router(_:)`` registers a generated Vapor route handler that receives only
+/// the request, extracts every ``Path`` value from `request.parameters`, and
+/// then calls the annotated function.
+///
+/// ```swift
+/// @On("reports/:id/rebuild", method: .PATCH)
+/// func rebuild(req: Request, @Path("id") id: UUID) async throws -> HTTPStatus {
+///     try await rebuildReport(id, on: req.db)
+///     return .accepted
+/// }
+/// ```
+///
+/// - Parameters:
+///   - url: The optional URL path relative to the enclosing router.
+///   - method: The HTTP method used to register the route.
 @attached(peer)
 public macro On(
     _ url: StaticString? = nil,
     method: HTTPMethod
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
+/// Marks a typed handler function as a `GET` route.
+///
+/// Attach `@Get` to a function inside a ``Router(_:)`` type. The first
+/// function parameter must be `Request` or `Vapor.Request`; additional path
+/// parameters are injected from the matched route when they are marked with
+/// ``Path``.
+///
+/// ```swift
+/// @Get("users/:id")
+/// func find(req: Request, @Path("id") id: UUID) async throws -> UserDTO {
+///     try await loadUser(id, on: req.db)
+/// }
+/// ```
+///
+/// - Parameter url: The optional URL path relative to the enclosing router.
 @attached(peer)
 public macro Get(
     _ url: StaticString? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
+/// Marks a typed handler function as a `POST` route.
+///
+/// Use `@Post` when a typed handler function should be registered for `POST`.
+/// The generated route handler extracts any ``Path`` parameters before calling
+/// the annotated function.
+///
+/// ```swift
+/// @Post("users/:id/sessions")
+/// func createSession(req: Request, @Path("id") id: UUID) async throws -> SessionDTO {
+///     try await createSession(for: id, on: req.db)
+/// }
+/// ```
+///
+/// - Parameter url: The optional URL path relative to the enclosing router.
 @attached(peer)
 public macro Post(
     _ url: StaticString? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
+/// Marks a typed handler function as a `PUT` route.
+///
+/// Use `@Put` when a typed handler function should be registered for `PUT`.
+/// Path parameters in the function signature must be marked with ``Path`` and
+/// declared in the route URL.
+///
+/// ```swift
+/// @Put("users/:id")
+/// func replace(req: Request, @Path("id") id: UUID) async throws -> UserDTO {
+///     try await replaceUser(id, using: req)
+/// }
+/// ```
+///
+/// - Parameter url: The optional URL path relative to the enclosing router.
 @attached(peer)
 public macro Put(
     _ url: StaticString? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
+/// Marks a typed handler function as a `DELETE` route.
+///
+/// Use `@Delete` when a typed handler function should be registered for
+/// `DELETE`. The generated route handler keeps the annotated function's
+/// request label and passes injected ``Path`` values by their original
+/// parameter labels.
+///
+/// ```swift
+/// @Delete("users/:id")
+/// func remove(_ req: Request, @Path("id") id: UUID) async throws -> HTTPStatus {
+///     try await deleteUser(id, on: req.db)
+///     return .noContent
+/// }
+/// ```
+///
+/// - Parameter url: The optional URL path relative to the enclosing router.
 @attached(peer)
 public macro Delete(
     _ url: StaticString? = nil
