@@ -48,6 +48,11 @@ struct VaporKitIntegrationUsersRouter {
         let id = try req.parameters.require("id")
         return "user:\(id)"
     }
+
+    @Get("typed/:id")
+    func typed(_ req: Request, @Path("id") id: String) async throws -> String {
+        "typed:\(id):\(req.method.rawValue)"
+    }
 }
 
 struct EchoPayload: Content {

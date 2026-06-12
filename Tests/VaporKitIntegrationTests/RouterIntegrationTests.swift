@@ -44,6 +44,11 @@ import VaporTesting
                 #expect(response.status == .ok)
                 #expect(response.body.string == "user:42")
             }
+
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed/42") { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "typed:42:GET")
+            }
         }
     }
 }
