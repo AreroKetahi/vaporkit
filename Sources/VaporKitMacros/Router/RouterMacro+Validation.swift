@@ -75,6 +75,37 @@ extension RouterMacro {
         }
     }
 
+    static func validateRequiredParameters(
+        in typedHandlerMethods: [TypedHandlerMethodMetadata],
+        forwardedParameters: Set<String>,
+        override routerOverride: StaticCheckOverride?,
+        context: some MacroExpansionContext
+    ) {
+        for handlerMethod in typedHandlerMethods {
+            let override = handlerMethod.parameterCheckOverride ?? routerOverride
+            guard override != .error else {
+                continue
+            }
+
+            let availableParameters = Set(routeParameterNames(from: handlerMethod.path))
+                .union(forwardedParameters)
+            let requiredParameters = handlerMethod.pathParameters.map {
+                RequiredParameterAccess(
+                    syntax: Syntax($0.pathAttribute),
+                    name: $0.pathName,
+                    override: nil
+                )
+            }
+
+            diagnoseMissingRequiredParameters(
+                requiredParameters,
+                availableParameters: availableParameters,
+                override: override,
+                context: context
+            )
+        }
+    }
+
     static func diagnoseMissingRequiredParameters(
         _ requiredParameters: [RequiredParameterAccess],
         availableParameters: Set<String>,

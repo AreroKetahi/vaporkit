@@ -15,7 +15,7 @@ import Vapor
 /// registered child route collection in the router.
 ///
 /// - Parameter url: The optional base URL path for the router.
-@attached(member, names: named(boot), arbitrary)
+@attached(member, names: named(boot), prefixed(`$`))
 @attached(extension, conformances: RouteCollection)
 @attached(peer, names: prefixed(`$`))
 public macro Router(_ url: StaticString? = nil) = #externalMacro(module: "VaporKitMacros", type: "RouterMacro")
@@ -99,62 +99,33 @@ public macro Delete<T: AsyncResponseEncodable>(
     action: (Request) async throws -> T
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
-/// Declares a WebSocket route.
-///
-/// Use `#WebSocket` inside an ``Router(_:)`` type to register a WebSocket endpoint.
-/// The primary trailing closure is used as `shouldUpgrade` when `didUpgrade` is
-/// supplied; otherwise the closure is treated as the upgrade body. WebSocket
-/// events are declared with ``OnText(action:)``, ``OnBinary(action:)``, and
-/// ``OnClose(action:)`.
-///
-/// - Parameters:
-///   - url: The URL path segments relative to the enclosing router.
-///   - maxFrameSize: The maximum accepted WebSocket frame size.
-///   - shouldUpgrade: The async upgrade decision callback.
-///   - didUpgrade: The declaration body for WebSocket event handlers.
-@freestanding(declaration)
-public macro WebSocket(
-    _ url: StaticString...,
-    maxFrameSize: WebSocketMaxFrameSize = .default,
-    shouldUpgrade: @escaping @Sendable (Request) async throws -> HTTPHeaders? = { _ in [:] },
-    didUpgrade: () -> Void
+// MARK: - Typed Parameter Injection
+
+@attached(peer)
+public macro On(
+    _ url: StaticString? = nil,
+    method: HTTPMethod
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
-/// Declares a WebSocket text-message handler.
-///
-/// Use `#OnText` inside a ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)``
-/// upgrade body. The handler may declare explicit `(WebSocket, String)`
-/// parameters or use `$0` and `$1`, which are rewritten to generated unique names.
-///
-/// - Parameter action: The async text-message callback.
-@freestanding(expression)
-public macro OnText(
-    action: @escaping @Sendable (WebSocket, String) async -> Void
-) = #externalMacro(module: "VaporKitMacros", type: "EmptyExpressionMacro")
+@attached(peer)
+public macro Get(
+    _ url: StaticString? = nil
+) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
-/// Declares a WebSocket binary-message handler.
-///
-/// Use `#OnBinary` inside a ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)``
-/// upgrade body. The handler may declare explicit `(WebSocket, ByteBuffer)`
-/// parameters or use `$0` and `$1`, which are rewritten to generated unique names.
-///
-/// - Parameter action: The async binary-message callback.
-@freestanding(expression)
-public macro OnBinary(
-    action: @escaping @Sendable (WebSocket, ByteBuffer) async -> Void
-) = #externalMacro(module: "VaporKitMacros", type: "EmptyExpressionMacro")
+@attached(peer)
+public macro Post(
+    _ url: StaticString? = nil
+) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
-/// Declares a WebSocket close handler.
-///
-/// Use `#OnClose` inside a ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)``
-/// upgrade body to run code when the WebSocket closes. The closure must not
-/// declare parameters.
-///
-/// - Parameter action: The close callback body.
-@freestanding(expression)
-public macro OnClose(
-    action: @escaping @Sendable () -> Void
-) = #externalMacro(module: "VaporKitMacros", type: "EmptyExpressionMacro")
+@attached(peer)
+public macro Put(
+    _ url: StaticString? = nil
+) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
+
+@attached(peer)
+public macro Delete(
+    _ url: StaticString? = nil
+) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
 // MARK: - Register Macro
 
@@ -189,6 +160,8 @@ public macro RouteHandler(
     method: HTTPMethod
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
+// MARK: - Middleware
+
 /// Applies middleware to a route declaration.
 ///
 /// Attach `@Middleware` to a freestanding route macro or
@@ -199,6 +172,8 @@ public macro RouteHandler(
 @attached(peer)
 public macro Middleware(_ middlewares: any Middleware...) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
+// MARK: - Children Controller Registeration
+
 /// Registers child route collections.
 ///
 /// Use `#Register` inside an ``Router(_:)`` type to register one or more child
@@ -208,26 +183,3 @@ public macro Middleware(_ middlewares: any Middleware...) = #externalMacro(modul
 /// - Parameter router: The child route collections to register.
 @freestanding(declaration)
 public macro Register(_ router: any RouteCollection...) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
-
-// MARK: - Parameter Static Check Support
-
-/// Declares route parameters forwarded from an outer router.
-///
-/// Use `#ForwardParameters` inside an ``Router(_:)`` type when this router is
-/// registered below a parent path that contains route parameters. The declared
-/// names are accepted by static checks for `req.parameters.get` and
-/// `req.parameters.require`.
-///
-/// - Parameter parameters: The forwarded route parameter names.
-@freestanding(declaration)
-public macro ForwardParameters(_ parameters: StaticString...) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
-
-/// Disables static route-parameter checking.
-///
-/// Attach `@DisableParameterCheck` to an ``Router(_:)`` type to disable checks for
-/// the whole router, or attach it to a route declaration or ``RouteHandler(_:method:)-(StaticString?,_)``
-/// function to disable checks for only that route.
-///
-/// - Parameter severity: The highest severity to silence or downgrade.
-@attached(peer)
-public macro DisableParameterCheck(as severity: StaticCheckSeverity = .error) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")

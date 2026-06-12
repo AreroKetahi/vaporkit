@@ -24,6 +24,19 @@ extension RouterMacro {
         return (path, method)
     }
 
+    static func routeSpec(
+        from attribute: AttributeSyntax,
+        macroName: RouteMacroName
+    ) -> (path: String, method: String) {
+        guard case let .argumentList(arguments) = attribute.arguments else {
+            return ("", macroName.defaultMethod ?? "")
+        }
+
+        let path = routePath(from: arguments)
+        let method = routeMethod(from: arguments, macroName: macroName)
+        return (path, method)
+    }
+
     static func routePath(from arguments: LabeledExprListSyntax) -> String {
         guard let pathArgument = arguments.first(where: { $0.label == nil }) else {
             return ""

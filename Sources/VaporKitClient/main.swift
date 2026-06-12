@@ -232,3 +232,16 @@ struct BypassStaticCheckRoutes {
 }
 
 #endif
+
+@AutoRegisterable
+@Router
+struct TypedParameterController {
+    @Get(":id")
+    @DisableParameterCheck
+    func find(
+        req: Request,
+        @Path("ip") id: String
+    ) -> some AsyncResponseEncodable {
+        id
+    }
+}
