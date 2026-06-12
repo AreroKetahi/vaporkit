@@ -72,8 +72,9 @@ var recoveryEmail: String
 var displayName: String
 ```
 
-The operators ``!(_:)``, ``&&(_:_:)``, and ``||(_:_:)`` preserve the rule
-tree, so generated validation keeps the intended precedence.
+The operators ``!(_:)->ValidationRule``, ``&&(_:_:)->ValidationRule``, and 
+``||(_:_:)->ValidationRule`` preserve the rule tree, so generated validation 
+keeps the intended precedence.
 
 ## Configure Required Fields
 
@@ -126,6 +127,6 @@ when the value is valid.
 - ``ValidationRule``
 - ``ValidationRule/Argument``
 - ``ValidationRule/Kind``
-- ``!(_:)``
-- ``&&(_:_:)``
-- ``||(_:_:)``
+- ``!(_:)->ValidationRule``
+- ``&&(_:_:)->ValidationRule``
+- ``||(_:_:)->ValidationRule``
