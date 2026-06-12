@@ -19,7 +19,7 @@
 /// - Returns: The value produced by `action`.
 @freestanding(expression)
 public macro Bypass<T, E: Error>(
-    as severity: StaticCheckSeverity = .error,
+    as severity: StaticCheckSeverity = .none,
     _ action: () async throws(E) -> T
 ) -> T = #externalMacro(module: "VaporKitMacros", type: "BypassMacro")
 

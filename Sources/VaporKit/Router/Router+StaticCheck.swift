@@ -24,5 +24,5 @@ public macro ForwardParameters(_ parameters: StaticString...) = #externalMacro(m
 ///
 /// - Parameter severity: The highest severity to silence or downgrade.
 @attached(peer)
-public macro DisableParameterCheck(as severity: StaticCheckSeverity = .error) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
+public macro DisableParameterCheck(as severity: StaticCheckSeverity = .none) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
