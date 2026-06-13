@@ -23,7 +23,7 @@ Add VaporKit to your package dependencies.
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/AreroKetahi/vaporkit.git", from: "0.1.0")
+    .package(url: "https://github.com/AreroKetahi/vaporkit.git", branch: "main")
 ]
 ```
 
@@ -47,6 +47,14 @@ import VaporKit
 
 ## Routing
 
+VaporKit supports two routing declaration styles:
+
+- **Convenient routing declarations** use compact route closures.
+- **Parameterized routing declarations** use regular functions with typed
+  parameters in the signature.
+
+### Convenient Routing Declarations
+
 Attach `@Router` to a type to synthesize `RouteCollection` conformance and a
 `boot(routes:)` implementation.
 
@@ -60,17 +68,16 @@ struct UserRoutes {
 
     #Post { req -> HTTPStatus in
         let user = try req.content.decode(CreateUserRequest.self)
-        try await user.save(on: req.db)
+        try await createUser(user, on: req.db)
         return .created
     }
 }
 ```
 
-The route closure can use any request parameter name, or shorthand `$0`.
-Explicit return types are preserved, so declarations such as
-`{ req -> HTTPStatus in ... }` generate a handler returning `HTTPStatus`.
+Use this style for short handlers that are easiest to read inline. The closure
+can use any request parameter name, or shorthand `$0`.
 
-### HTTP Helpers
+#### HTTP Helpers
 
 VaporKit provides method-specific helpers:
 
@@ -87,7 +94,7 @@ Use `#On` when you need to provide the method explicitly.
 }
 ```
 
-### Existing Handler Functions
+#### Existing Handler Functions
 
 Use `@RouteHandler` when you want to keep a named function and register it from
 the generated `boot(routes:)`.
@@ -102,7 +109,7 @@ struct AdminRoutes {
 }
 ```
 
-### Middleware
+#### Middleware
 
 Attach `@Middleware` to a route declaration or route handler function.
 
@@ -115,7 +122,7 @@ Attach `@Middleware` to a route declaration or route handler function.
 
 The generated route is registered on `routes.grouped(...)`.
 
-### Child Route Collections
+#### Child Route Collections
 
 Use `#Register` to register one or more child `RouteCollection` values below
 the enclosing router prefix.
@@ -126,6 +133,58 @@ struct APIRoutes {
     #Register(UserRoutes(), AdminRoutes())
 }
 ```
+
+### Parameterized Routing Declarations
+
+Use this style when a handler has named inputs or is clearer as a regular
+function. The first parameter is `Request`; additional values are declared with
+`@Path`, `@Query`, or `@ContentBody`.
+
+```swift
+struct SearchQuery: Decodable {
+    var term: String
+    var limit: Int
+}
+
+struct UpdateUserRequest: Content {
+    var username: String
+}
+
+@Router("api/users")
+struct UserRoutes {
+    @Get(":id")
+    func show(
+        req: Request,
+        @Path id: UUID,
+        @Query("include.profile") includeProfile: Bool = false
+    ) async throws -> UserDTO {
+        try await loadUser(id, includeProfile: includeProfile, on: req.db)
+    }
+
+    @Get("search")
+    func search(
+        req: Request,
+        @Query input: SearchQuery,
+        @Query("filter.name") name: String?,
+        @Query("page/number") page: Int = 1
+    ) async throws -> [UserDTO] {
+        try await searchUsers(input, name: name, page: page, on: req.db)
+    }
+
+    @Put(":id")
+    func update(
+        req: Request,
+        @Path id: UUID,
+        @ContentBody body: UpdateUserRequest
+    ) async throws -> UserDTO {
+        try await updateUser(id, with: body, on: req.db)
+    }
+}
+```
+
+Use `@Path` for route parameters, `@Query` for query values, and
+`@ContentBody` for request bodies. `@Query` and `@ContentBody` support optional
+types and default values.
 
 ## WebSocket Routes
 
