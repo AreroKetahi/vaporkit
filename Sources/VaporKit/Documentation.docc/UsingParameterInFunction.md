@@ -118,6 +118,21 @@ func show(
 The string passed to ``Path`` is the route parameter name without the leading
 colon. For a route segment `":id"`, write `@Path("id")`.
 
+The name is optional. When it is omitted, VaporKit uses the wrapped parameter's
+local name:
+
+```swift
+@Get("projects/:key")
+func show(req: Request, @Path of key: UUID) async throws -> ProjectDTO {
+    try await loadProject(key: key, on: req.db)
+}
+
+@Get("users/:name")
+func show(req: Request, @Path name: String) -> String {
+    name
+}
+```
+
 Path parameter values must conform to `LosslessStringConvertible`, matching
 Vapor's `Request.parameters.require(_:as:)` API. Standard types such as
 `String`, `Int`, `Double`, and `Bool` are supported by the standard library.

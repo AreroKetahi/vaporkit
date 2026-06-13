@@ -63,6 +63,59 @@ struct RouterMacroTypedHandlerTests {
         throw Test.cancel("macros are only supported when running tests for the host platform")
     #endif
     }
+
+    @Test
+    func registersTypedHandlerFunctionsWithImplicitPathNames() throws {
+    #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Get("projects/:key")
+                func show(req: Request, @Path of key: UUID) async throws -> ProjectDTO {
+                    try await loadProject(key: key, on: req.db)
+                }
+            
+                @Get("users/:name")
+                func find(req: Request, @Path() name: String) -> String {
+                    name
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+                func show(req: Request, @Path of key: UUID) async throws -> ProjectDTO {
+                    try await loadProject(key: key, on: req.db)
+                }
+                func find(req: Request, @Path() name: String) -> String {
+                    name
+                }
+            
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "api", "projects", ":key", use: __macro_local_4showfMu_)
+                    routes.on(.GET, "api", "users", ":name", use: __macro_local_4findfMu_)
+                }
+            
+                func __macro_local_4showfMu_(req: Vapor.Request) async throws -> ProjectDTO {
+                    let __macro_local_3keyfMu_ = try req.parameters.require("key", as: UUID.self)
+                    return try await show(req: req, of: __macro_local_3keyfMu_)
+                }
+            
+                func __macro_local_4findfMu_(req: Vapor.Request) async throws -> String {
+                    let __macro_local_4namefMu_ = try req.parameters.require("name", as: String.self)
+                    return find(req: req, name: __macro_local_4namefMu_)
+                }
+            }
+            
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+    #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+    #endif
+    }
     
     @Test
     func rejectsMissingRequiredPathParameterInTypedHandler() throws {

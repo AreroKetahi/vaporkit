@@ -81,7 +81,11 @@ extension RouterMacro {
                 return nil
             }
 
-            guard let pathName = pathParameterName(from: pathAttribute) else {
+            let localName = localParameterName(from: parameter)
+            guard let pathName = pathParameterName(
+                from: pathAttribute,
+                defaultName: localName
+            ) else {
                 context.diagnose(
                     Diagnostic(
                         node: Syntax(pathAttribute),
@@ -94,10 +98,10 @@ extension RouterMacro {
             pathParameters.append(
                 PathParameterMetadata(
                     externalName: externalParameterName(from: parameter),
-                    localName: localParameterName(from: parameter),
+                    localName: localName,
                     pathName: pathName,
                     type: parameter.type,
-                    generatedName: context.makeUniqueName(localParameterName(from: parameter)),
+                    generatedName: context.makeUniqueName(localName),
                     pathAttribute: pathAttribute
                 )
             )

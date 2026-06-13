@@ -35,11 +35,16 @@ extension RouterMacro {
         }
     }
 
-    static func pathParameterName(from attribute: AttributeSyntax) -> String? {
-        guard case .argumentList(let arguments) = attribute.arguments,
-              let firstArgument = arguments.first(where: { $0.label == nil })
-        else {
-            return nil
+    static func pathParameterName(
+        from attribute: AttributeSyntax,
+        defaultName: String
+    ) -> String? {
+        guard case .argumentList(let arguments) = attribute.arguments else {
+            return defaultName
+        }
+
+        guard let firstArgument = arguments.first(where: { $0.label == nil }) else {
+            return arguments.isEmpty ? defaultName : nil
         }
 
         return stringLiteralValue(from: firstArgument.expression)

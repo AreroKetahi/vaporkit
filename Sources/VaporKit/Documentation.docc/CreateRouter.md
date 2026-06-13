@@ -76,6 +76,9 @@ func find(req: Request, @Path("id") id: UUID) async throws -> UserDTO {
 }
 ```
 
+The explicit ``Path`` name can be omitted when it matches the parameter's local
+name, such as `@Path id: UUID`.
+
 For the full typed handler syntax, see <doc:UsingParameterInFunction>.
 
 ### Customize Routing

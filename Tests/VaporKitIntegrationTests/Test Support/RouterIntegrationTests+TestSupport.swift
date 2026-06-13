@@ -50,7 +50,7 @@ struct VaporKitIntegrationUsersRouter {
     }
 
     @Get("typed/:id")
-    func typed(_ req: Request, @Path("id") id: String) async throws -> String {
+    func typed(_ req: Request, @Path id: String) async throws -> String {
         "typed:\(id):\(req.method.rawValue)"
     }
 }
