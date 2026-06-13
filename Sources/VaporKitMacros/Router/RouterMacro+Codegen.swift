@@ -118,14 +118,12 @@ extension RouterMacro {
     static func handlerDeclaration(for metadata: TypedHandlerMethodMetadata) -> DeclSyntax {
         let requestParameter = renderedParameter(metadata.requestParameter)
         let requestLocalName = metadata.requestParameter.localName
-        let extractions = metadata.pathParameters.map { parameter in
-            """
-            let \(parameter.generatedName) = try \(requestLocalName).parameters.require("\(parameter.pathName)", as: \(parameter.type.trimmedDescription).self)
-            """
+        let extractions = metadata.injectedParameters.map { parameter in
+            injectedParameterExtraction(parameter, requestLocalName: requestLocalName)
         }.joined(separator: "\n")
         let arguments = (
             [renderedArgument(metadata.requestParameter, value: requestLocalName)] +
-            metadata.pathParameters.map { parameter in
+            metadata.injectedParameters.map { parameter in
                 renderedArgument(parameter, value: parameter.generatedName.text)
             }
         ).joined(separator: ", ")
@@ -137,6 +135,66 @@ extension RouterMacro {
             return \(raw: callPrefix)\(metadata.functionName)(\(raw: arguments))
         }
         """
+    }
+
+    static func injectedParameterExtraction(
+        _ parameter: InjectedParameterMetadata,
+        requestLocalName: String
+    ) -> String {
+        let tryKeyword = renderedDecodingTry(for: parameter)
+        let type = renderedDecodingType(for: parameter)
+
+        switch parameter.source {
+        case .path(let name):
+            return """
+            let \(parameter.generatedName) = try \(requestLocalName).parameters.require("\(name)", as: \(parameter.type.trimmedDescription).self)
+            """
+        case .query(nil):
+            return """
+            let \(parameter.generatedName) = \(tryKeyword) \(requestLocalName).query.decode(\(type).self)
+            """
+        case .query(.some(let keyPath)):
+            let renderedPath = keyPath.map { #""\#($0)""# }.joined(separator: ", ")
+            return """
+            let \(parameter.generatedName) = \(tryKeyword) \(requestLocalName).query.get(\(type).self, at: \(renderedPath))
+            """
+        case .content:
+            return """
+            let \(parameter.generatedName) = \(tryKeyword) \(requestLocalName).content.decode(\(type).self)
+            """
+        }
+    }
+
+    static func renderedDecodingTry(for parameter: InjectedParameterMetadata) -> String {
+        if parameter.defaultValue != nil || isOptionalType(parameter.type) {
+            return "try?"
+        }
+
+        return "try"
+    }
+
+    static func renderedDecodingType(for parameter: InjectedParameterMetadata) -> String {
+        if parameter.defaultValue != nil {
+            return parameter.type.trimmedDescription
+        }
+
+        return optionalWrappedTypeDescription(of: parameter.type) ?? parameter.type.trimmedDescription
+    }
+
+    static func optionalWrappedTypeDescription(of type: TypeSyntax) -> String? {
+        if let optional = type.as(OptionalTypeSyntax.self) {
+            return optional.wrappedType.trimmedDescription
+        }
+
+        if let optional = type.as(ImplicitlyUnwrappedOptionalTypeSyntax.self) {
+            return optional.wrappedType.trimmedDescription
+        }
+
+        return nil
+    }
+
+    static func isOptionalType(_ type: TypeSyntax) -> Bool {
+        optionalWrappedTypeDescription(of: type) != nil
     }
 
     static func handlerDeclaration(for metadata: WebSocketMetadata) -> DeclSyntax {
@@ -234,12 +292,29 @@ extension RouterMacro {
         return "\(externalName): \(value)"
     }
 
-    static func renderedArgument(_ parameter: PathParameterMetadata, value: String) -> String {
-        guard let externalName = parameter.externalName else {
-            return value
+    static func renderedArgument(_ parameter: InjectedParameterMetadata, value: String) -> String {
+        let renderedValue: String
+        if let defaultValue = parameter.defaultValue,
+           !isPathParameter(parameter)
+        {
+            renderedValue = "\(value) ?? \(defaultValue.trimmedDescription)"
+        } else {
+            renderedValue = value
         }
 
-        return "\(externalName): \(value)"
+        guard let externalName = parameter.externalName else {
+            return renderedValue
+        }
+
+        return "\(externalName): \(renderedValue)"
+    }
+
+    static func isPathParameter(_ parameter: InjectedParameterMetadata) -> Bool {
+        if case .path = parameter.source {
+            return true
+        }
+
+        return false
     }
 
     static func nominalTypeName(of declaration: some DeclGroupSyntax) -> String? {

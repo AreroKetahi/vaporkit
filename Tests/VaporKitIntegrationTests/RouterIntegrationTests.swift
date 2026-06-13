@@ -49,6 +49,23 @@ import VaporTesting
                 #expect(response.status == .ok)
                 #expect(response.body.string == "typed:42:GET")
             }
+
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed/42/query?term=vapor&limit=2&filter[name]=owner&page[number]=3") { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "query:42:vapor:2:owner:3")
+            }
+
+            try await app.testing().test(.POST, "/_test/integration/api/users/typed/42/content?audit[reason]=rename") { request in
+                try request.content.encode(UpdateUserBody(name: "updated"))
+            } afterResponse: { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "content:42:rename:updated")
+            }
+
+            try await app.testing().test(.POST, "/_test/integration/api/users/typed/42/defaults?name=neo") { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "defaults:42:neo:1:full:fallback")
+            }
         }
     }
 }

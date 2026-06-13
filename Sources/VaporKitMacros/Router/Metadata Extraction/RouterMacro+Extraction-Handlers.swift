@@ -69,38 +69,109 @@ extension RouterMacro {
         }
 
         let remainingParameters = Array(function.signature.parameterClause.parameters.dropFirst())
+        var injectedParameters: [InjectedParameterMetadata] = []
         var pathParameters: [PathParameterMetadata] = []
         for parameter in remainingParameters {
-            guard let pathAttribute = pathAttribute(from: parameter.attributes) else {
-                context.diagnose(
-                    Diagnostic(
-                        node: Syntax(parameter),
-                        message: RouteMacroDiagnostic.typedRouteRequiresPathParameterAttribute
+            let localName = localParameterName(from: parameter)
+            let generatedName = context.makeUniqueName(localName)
+            let defaultValue = parameter.defaultValue?.value
+
+            if let pathAttribute = pathAttribute(from: parameter.attributes) {
+                guard let pathName = pathParameterName(
+                    from: pathAttribute,
+                    defaultName: localName
+                ) else {
+                    context.diagnose(
+                        Diagnostic(
+                            node: Syntax(pathAttribute),
+                            message: RouteMacroDiagnostic.typedRoutePathRequiresLiteralName
+                        )
+                    )
+                    return nil
+                }
+
+                injectedParameters.append(
+                    InjectedParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        type: parameter.type,
+                        defaultValue: defaultValue,
+                        generatedName: generatedName,
+                        source: .path(name: pathName)
                     )
                 )
-                return nil
-            }
-
-            guard let pathName = pathParameterName(from: pathAttribute) else {
-                context.diagnose(
-                    Diagnostic(
-                        node: Syntax(pathAttribute),
-                        message: RouteMacroDiagnostic.typedRoutePathRequiresLiteralName
+                pathParameters.append(
+                    PathParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        pathName: pathName,
+                        type: parameter.type,
+                        generatedName: generatedName,
+                        pathAttribute: pathAttribute
                     )
                 )
-                return nil
+                continue
             }
 
-            pathParameters.append(
-                PathParameterMetadata(
-                    externalName: externalParameterName(from: parameter),
-                    localName: localParameterName(from: parameter),
-                    pathName: pathName,
-                    type: parameter.type,
-                    generatedName: context.makeUniqueName(localParameterName(from: parameter)),
-                    pathAttribute: pathAttribute
+            if let queryAttribute = queryAttribute(from: parameter.attributes) {
+                guard let keyPath = queryKeyPath(from: queryAttribute) else {
+                    injectedParameters.append(
+                        InjectedParameterMetadata(
+                            externalName: externalParameterName(from: parameter),
+                            localName: localName,
+                            type: parameter.type,
+                            defaultValue: defaultValue,
+                            generatedName: generatedName,
+                            source: .query(keyPath: nil)
+                        )
+                    )
+                    continue
+                }
+
+                guard let keyPath else {
+                    context.diagnose(
+                        Diagnostic(
+                            node: Syntax(queryAttribute),
+                            message: RouteMacroDiagnostic.typedRouteQueryRequiresLiteralKey
+                        )
+                    )
+                    return nil
+                }
+
+                injectedParameters.append(
+                    InjectedParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        type: parameter.type,
+                        defaultValue: defaultValue,
+                        generatedName: generatedName,
+                        source: .query(keyPath: keyPath)
+                    )
+                )
+                continue
+            }
+
+            if contentAttribute(from: parameter.attributes) != nil {
+                injectedParameters.append(
+                    InjectedParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        type: parameter.type,
+                        defaultValue: defaultValue,
+                        generatedName: generatedName,
+                        source: .content
+                    )
+                )
+                continue
+            }
+
+            context.diagnose(
+                Diagnostic(
+                    node: Syntax(parameter),
+                    message: RouteMacroDiagnostic.typedRouteRequiresInjectedParameterAttribute
                 )
             )
+            return nil
         }
 
         let routeSpec = routeSpec(from: routeAttribute, macroName: macroName)
@@ -109,6 +180,7 @@ extension RouterMacro {
             method: routeSpec.method,
             middlewares: middlewareExpressions(from: function.attributes),
             requestParameter: requestParameter,
+            injectedParameters: injectedParameters,
             pathParameters: pathParameters,
             parameterCheckOverride: staticCheckOverride(
                 named: disableParameterCheckAttributeName,

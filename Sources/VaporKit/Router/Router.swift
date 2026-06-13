@@ -105,12 +105,13 @@ public macro Delete<T: AsyncResponseEncodable>(
 ///
 /// Attach `@On` to a function inside a ``Router(_:)`` type when the route
 /// method is not covered by a method-specific helper. The function must accept
-/// a `Request` or `Vapor.Request` parameter first. Additional route path
-/// parameters must be marked with ``Path``.
+/// a `Request` or `Vapor.Request` parameter first. Additional injected
+/// parameters must be marked with ``Path``, ``Query``, or ``ContentBody``.
 ///
 /// ``Router(_:)`` registers a generated Vapor route handler that receives only
-/// the request, extracts every ``Path`` value from `request.parameters`, and
-/// then calls the annotated function.
+/// the request, extracts every ``Path`` value from `request.parameters`, decodes
+/// every ``Query`` value from `request.query`, decodes every ``ContentBody``
+/// value from `request.content`, and then calls the annotated function.
 ///
 /// ```swift
 /// @On("reports/:id/rebuild", method: .PATCH)
@@ -132,9 +133,9 @@ public macro On(
 /// Marks a typed handler function as a `GET` route.
 ///
 /// Attach `@Get` to a function inside a ``Router(_:)`` type. The first
-/// function parameter must be `Request` or `Vapor.Request`; additional path
-/// parameters are injected from the matched route when they are marked with
-/// ``Path``.
+/// function parameter must be `Request` or `Vapor.Request`; additional
+/// parameters are injected from the matched route or query string when they are
+/// marked with ``Path``, ``Query``, or ``ContentBody``.
 ///
 /// ```swift
 /// @Get("users/:id")
@@ -152,8 +153,8 @@ public macro Get(
 /// Marks a typed handler function as a `POST` route.
 ///
 /// Use `@Post` when a typed handler function should be registered for `POST`.
-/// The generated route handler extracts any ``Path`` parameters before calling
-/// the annotated function.
+/// The generated route handler extracts any ``Path``, ``Query``, and
+/// ``ContentBody`` parameters before calling the annotated function.
 ///
 /// ```swift
 /// @Post("users/:id/sessions")
@@ -172,7 +173,8 @@ public macro Post(
 ///
 /// Use `@Put` when a typed handler function should be registered for `PUT`.
 /// Path parameters in the function signature must be marked with ``Path`` and
-/// declared in the route URL.
+/// declared in the route URL. Query parameters must be marked with ``Query``;
+/// body parameters must be marked with ``ContentBody``.
 ///
 /// ```swift
 /// @Put("users/:id")
@@ -191,8 +193,8 @@ public macro Put(
 ///
 /// Use `@Delete` when a typed handler function should be registered for
 /// `DELETE`. The generated route handler keeps the annotated function's
-/// request label and passes injected ``Path`` values by their original
-/// parameter labels.
+/// request label and passes injected ``Path``, ``Query``, and ``ContentBody``
+/// values by their original parameter labels.
 ///
 /// ```swift
 /// @Delete("users/:id")

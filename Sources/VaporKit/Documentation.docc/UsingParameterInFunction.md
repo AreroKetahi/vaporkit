@@ -1,7 +1,7 @@
 # Using Parameters in Functions
 
-Write route handlers as regular functions and let VaporKit inject typed path
-parameters.
+Write route handlers as regular functions and let VaporKit inject typed path,
+query, and content parameters.
 
 ## Overview
 
@@ -14,15 +14,15 @@ Vapor's native route parameters are read from `Request.parameters`:
 }
 ```
 
-Typed handler functions keep the same Vapor route model but move the path
-parameter into the function signature. Attach an HTTP method macro to a
-function and mark injected path parameters with ``Path``:
+Typed handler functions keep the same Vapor route model but move path, query,
+and content parameters into the function signature. Attach an HTTP method macro
+to a function and mark injected path parameters with ``Path``:
 
 ```swift
 @Router("users")
 struct UserRoutes {
     @Get(":id")
-    func find(req: Request, @Path("id") id: UUID) async throws -> UserDTO {
+    func find(req: Request, @Path id: UUID) async throws -> UserDTO {
         try await loadUser(req: req, id: id)
     }
 }
@@ -54,7 +54,7 @@ marked with one of the attached route macros:
 @Router("projects")
 struct ProjectRoutes {
     @Get(":id")
-    func show(req: Request, @Path("id") id: UUID) throws -> ProjectDTO {
+    func show(req: Request, @Path id: UUID) throws -> ProjectDTO {
         try loadProject(id, for: req)
     }
 }
@@ -65,7 +65,7 @@ dedicated helper:
 
 ```swift
 @On(":id/archive", method: .PATCH)
-func archive(req: Request, @Path("id") id: UUID) async throws -> HTTPStatus {
+func archive(req: Request, @Path id: UUID) async throws -> HTTPStatus {
     try await archiveProject(id, on: req.db)
     return .accepted
 }
@@ -81,7 +81,7 @@ preserved in the generated wrapper call:
 
 ```swift
 @Get(":id")
-func show(request: Request, @Path("id") id: UUID) -> String {
+func show(request: Request, @Path id: UUID) -> String {
     "\(request.method.rawValue):\(id)"
 }
 ```
@@ -90,7 +90,7 @@ Underscored request parameters are supported as well:
 
 ```swift
 @Delete(":id")
-func delete(_ req: Vapor.Request, @Path("id") id: UUID) throws -> HTTPStatus {
+func delete(_ req: Vapor.Request, @Path id: UUID) throws -> HTTPStatus {
     try deleteProject(id, on: req.db)
     return .noContent
 }
@@ -108,8 +108,8 @@ Every function parameter after the request parameter must be marked with
 @Get(":tenantID/users/:id")
 func show(
     req: Request,
-    @Path("tenantID") tenantID: UUID,
-    @Path("id") id: UUID
+    @Path tenantID: UUID,
+    @Path id: UUID
 ) async throws -> UserDTO {
     try await loadUser(tenantID: tenantID, id: id, on: req.db)
 }
@@ -118,10 +118,132 @@ func show(
 The string passed to ``Path`` is the route parameter name without the leading
 colon. For a route segment `":id"`, write `@Path("id")`.
 
+The name is optional. When it is omitted, VaporKit uses the wrapped parameter's
+local name:
+
+```swift
+@Get("projects/:key")
+func show(req: Request, @Path of key: UUID) async throws -> ProjectDTO {
+    try await loadProject(key: key, on: req.db)
+}
+
+@Get("users/:name")
+func show(req: Request, @Path name: String) -> String {
+    name
+}
+```
+
 Path parameter values must conform to `LosslessStringConvertible`, matching
 Vapor's `Request.parameters.require(_:as:)` API. Standard types such as
 `String`, `Int`, `Double`, and `Bool` are supported by the standard library.
 Vapor also makes `UUID` usable as a route parameter type.
+
+## Query Parameters
+
+Use ``Query`` for values decoded from `Request.query`:
+
+```swift
+struct SearchQuery: Decodable {
+    var term: String
+    var limit: Int
+}
+
+@Get("search")
+func search(req: Request, @Query input: SearchQuery) async throws -> [ProjectDTO] {
+    try await searchProjects(input, on: req.db)
+}
+```
+
+When no key is provided, the generated wrapper decodes the full query string:
+
+```swift
+let <generated-input> = try req.query.decode(SearchQuery.self)
+```
+
+Pass a key to decode one value with Vapor's query key-path API:
+
+```swift
+@Get("search")
+func search(
+    req: Request,
+    @Query("filter.name") name: String,
+    @Query("page/number") page: Int
+) -> String {
+    "\(name):\(page)"
+}
+```
+
+Dots and slashes both split the key into path components. The generated wrapper
+uses `req.query.get(_:at:)`:
+
+```swift
+let <generated-name> = try req.query.get(String.self, at: "filter", "name")
+let <generated-page> = try req.query.get(Int.self, at: "page", "number")
+```
+
+Optional query parameters are decoded with `try?`. Default values are applied
+when calling your handler:
+
+```swift
+@Get("search")
+func search(
+    req: Request,
+    @Query("filter.name") name: String?,
+    @Query page: Int = 1
+) -> String {
+    "\(name ?? "all"):\(page)"
+}
+```
+
+The generated wrapper keeps missing or invalid values from failing the route:
+
+```swift
+let <generated-name> = try? req.query.get(String.self, at: "filter", "name")
+let <generated-page> = try? req.query.get(Int.self, at: "page")
+return search(req: req, name: <generated-name>, page: <generated-page> ?? 1)
+```
+
+## Content Parameters
+
+Use ``ContentBody`` for values decoded from `Request.content`:
+
+```swift
+struct CreateProjectBody: Decodable {
+    var name: String
+}
+
+@Post("projects")
+func create(
+    req: Request,
+    @ContentBody body: CreateProjectBody
+) async throws -> ProjectDTO {
+    try await createProject(body, on: req.db)
+}
+```
+
+The generated wrapper decodes the body before calling your function:
+
+```swift
+let <generated-body> = try req.content.decode(CreateProjectBody.self)
+```
+
+``ContentBody`` also supports optional parameters and default values. Optional
+body parameters use `try?`; default values are applied in the generated call:
+
+```swift
+@Post("projects")
+func create(
+    req: Request,
+    @ContentBody body: CreateProjectBody = .empty
+) async throws -> ProjectDTO {
+    try await createProject(body, on: req.db)
+}
+```
+
+```swift
+let <generated-body> = try? req.content.decode(CreateProjectBody.self)
+return try await create(req: req, body: <generated-body> ?? .empty)
+```
 
 ## Static Parameter Checking
 
@@ -130,7 +252,7 @@ Typed path parameters participate in VaporKit's route parameter checks. If a
 
 ```swift
 @Get(":id")
-func show(req: Request, @Path("slug") slug: String) -> String {
+func show(req: Request, @Path slug: String) -> String {
     slug
 }
 ```
@@ -146,8 +268,8 @@ The same controls described in <doc:StaticRouteParameterChecking> apply:
 @Get(":id")
 func show(
     req: Request,
-    @Path("tenantID") tenantID: UUID,
-    @Path("id") id: UUID
+    @Path tenantID: UUID,
+    @Path id: UUID
 ) -> String {
     "\(tenantID)/\(id)"
 }
@@ -173,7 +295,7 @@ the handler body is easier to read as a normal method:
 
 ```swift
 @Get("users/:id")
-func find(req: Request, @Path("id") id: UUID) async throws -> UserDTO {
+func find(req: Request, @Path id: UUID) async throws -> UserDTO {
     try await loadUser(id, on: req.db)
 }
 ```
@@ -191,3 +313,9 @@ remove the repetitive parameter extraction code.
 - ``Put(_:)``
 - ``Delete(_:)``
 - ``On(_:method:)``
+
+### Parameter Markers
+
+- ``Path``
+- ``Query``
+- ``ContentBody``
