@@ -93,3 +93,39 @@ public struct Query<Value> where Value: Decodable {
         self.wrappedValue = wrappedValue
     }
 }
+
+// MARK: Content Body
+
+/// Marks a typed handler function parameter as a decoded request body value.
+///
+/// Use `@ContentBody` on a parameter after the request parameter in a typed route
+/// handler. The generated route handler decodes the request body with
+/// `Request.content.decode(_:)` and passes the decoded value to the original
+/// function.
+///
+/// ```swift
+/// @Post("users")
+/// func create(req: Request, @ContentBody input: CreateUserBody) async throws -> UserDTO {
+///     try await createUser(input, on: req.db)
+/// }
+/// ```
+///
+/// `Value` must conform to `Decodable` because Vapor content values are parsed
+/// with `Request.content.decode(_:)`. `@ContentBody` itself does not parse the
+/// request; it is a marker wrapper used by the router macro.
+@propertyWrapper
+public struct ContentBody<Value> where Value: Decodable {
+    /// The typed value injected from the request body.
+    public let wrappedValue: Value
+
+    /// Creates a content parameter wrapper.
+    ///
+    /// This initializer is used when Swift applies the property wrapper to the
+    /// original handler function. ``Router(_:)`` reads the wrapper during macro
+    /// expansion and generates the body decoding code.
+    ///
+    /// - Parameter wrappedValue: The already-decoded request body value.
+    public init(wrappedValue: Value) {
+        self.wrappedValue = wrappedValue
+    }
+}

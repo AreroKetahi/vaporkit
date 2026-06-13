@@ -64,6 +64,16 @@ struct VaporKitIntegrationUsersRouter {
     ) async throws -> String {
         "query:\(id):\(input.term):\(input.limit):\(filterName):\(page)"
     }
+
+    @Post("typed/:id/content")
+    func typedContent(
+        _ req: Request,
+        @Path id: String,
+        @Query("audit.reason") reason: String,
+        @ContentBody body: UpdateUserBody
+    ) async throws -> String {
+        "content:\(id):\(reason):\(body.name)"
+    }
 }
 
 struct EchoPayload: Content {
@@ -73,4 +83,8 @@ struct EchoPayload: Content {
 struct SearchQuery: Decodable {
     var term: String
     var limit: Int
+}
+
+struct UpdateUserBody: Content {
+    var name: String
 }

@@ -80,6 +80,7 @@ The explicit ``Path`` name can be omitted when it matches the parameter's local
 name, such as `@Path id: UUID`.
 
 Use ``Query`` on typed handler parameters to decode request query values.
+Use ``ContentBody`` to decode request bodies with `Request.content.decode(_:)`.
 
 For the full typed handler syntax, see <doc:UsingParameterInFunction>.
 

@@ -45,6 +45,16 @@ extension RouterMacro {
         }
     }
 
+    static func contentAttribute(from attributes: AttributeListSyntax)
+        -> AttributeSyntax?
+    {
+        attributes.compactMap { element in
+            element.as(AttributeSyntax.self)
+        }.first { attribute in
+            attributeName(of: attribute) == typedContentAttributeName
+        }
+    }
+
     static func pathParameterName(
         from attribute: AttributeSyntax,
         defaultName: String

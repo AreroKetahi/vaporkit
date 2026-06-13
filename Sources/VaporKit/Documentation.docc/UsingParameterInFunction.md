@@ -1,7 +1,7 @@
 # Using Parameters in Functions
 
-Write route handlers as regular functions and let VaporKit inject typed path
-and query parameters.
+Write route handlers as regular functions and let VaporKit inject typed path,
+query, and content parameters.
 
 ## Overview
 
@@ -14,9 +14,9 @@ Vapor's native route parameters are read from `Request.parameters`:
 }
 ```
 
-Typed handler functions keep the same Vapor route model but move path and query
-parameters into the function signature. Attach an HTTP method macro to a
-function and mark injected path parameters with ``Path``:
+Typed handler functions keep the same Vapor route model but move path, query,
+and content parameters into the function signature. Attach an HTTP method macro
+to a function and mark injected path parameters with ``Path``:
 
 ```swift
 @Router("users")
@@ -179,6 +179,30 @@ uses `req.query.get(_:at:)`:
 ```swift
 let <generated-name> = try req.query.get(String.self, at: "filter", "name")
 let <generated-page> = try req.query.get(Int.self, at: "page", "number")
+```
+
+## Content Parameters
+
+Use ``ContentBody`` for values decoded from `Request.content`:
+
+```swift
+struct CreateProjectBody: Decodable {
+    var name: String
+}
+
+@Post("projects")
+func create(
+    req: Request,
+    @ContentBody body: CreateProjectBody
+) async throws -> ProjectDTO {
+    try await createProject(body, on: req.db)
+}
+```
+
+The generated wrapper decodes the body before calling your function:
+
+```swift
+let <generated-body> = try req.content.decode(CreateProjectBody.self)
 ```
 
 ## Static Parameter Checking

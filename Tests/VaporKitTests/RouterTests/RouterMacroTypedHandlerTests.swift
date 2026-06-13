@@ -6,6 +6,7 @@ import VaporKitMacros
     "Router": RouterMacro.self,
     "RouteHandler": EmptyMacro.self,
     "Get": EmptyMacro.self,
+    "Post": EmptyMacro.self,
     "On": EmptyMacro.self,
     "Middleware": EmptyMacro.self,
     "DisableParameterCheck": EmptyMacro.self,
@@ -159,6 +160,57 @@ struct RouterMacroTypedHandlerTests {
                     let __macro_local_4namefMu_ = try req.query.get(String.self, at: "filter", "name")
                     let __macro_local_4pagefMu_ = try req.query.get(Int.self, at: "page", "number")
                     return try await search(req: req, id: __macro_local_2idfMu_, input: __macro_local_5inputfMu_, name: __macro_local_4namefMu_, page: __macro_local_4pagefMu_)
+                }
+            }
+            
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+    #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+    #endif
+    }
+
+    @Test
+    func registersTypedHandlerFunctionsWithContentParameters() throws {
+    #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Post("projects/:id")
+                func update(
+                    req: Request,
+                    @Path id: UUID,
+                    @Query("audit.reason") reason: String,
+                    @ContentBody body: UpdateProjectBody
+                ) async throws -> ProjectDTO {
+                    try await updateProject(id: id, reason: reason, body: body, on: req.db)
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+                func update(
+                    req: Request,
+                    @Path id: UUID,
+                    @Query("audit.reason") reason: String,
+                    @ContentBody body: UpdateProjectBody
+                ) async throws -> ProjectDTO {
+                    try await updateProject(id: id, reason: reason, body: body, on: req.db)
+                }
+            
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.POST, "api", "projects", ":id", use: __macro_local_6updatefMu_)
+                }
+            
+                func __macro_local_6updatefMu_(req: Vapor.Request) async throws -> ProjectDTO {
+                    let __macro_local_2idfMu_ = try req.parameters.require("id", as: UUID.self)
+                    let __macro_local_6reasonfMu_ = try req.query.get(String.self, at: "audit", "reason")
+                    let __macro_local_4bodyfMu_ = try req.content.decode(UpdateProjectBody.self)
+                    return try await update(req: req, id: __macro_local_2idfMu_, reason: __macro_local_6reasonfMu_, body: __macro_local_4bodyfMu_)
                 }
             }
             

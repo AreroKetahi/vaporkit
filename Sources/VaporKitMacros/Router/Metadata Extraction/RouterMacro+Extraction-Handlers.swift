@@ -147,6 +147,19 @@ extension RouterMacro {
                 continue
             }
 
+            if contentAttribute(from: parameter.attributes) != nil {
+                injectedParameters.append(
+                    InjectedParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        type: parameter.type,
+                        generatedName: generatedName,
+                        source: .content
+                    )
+                )
+                continue
+            }
+
             context.diagnose(
                 Diagnostic(
                     node: Syntax(parameter),

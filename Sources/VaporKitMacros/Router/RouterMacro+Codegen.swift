@@ -155,6 +155,10 @@ extension RouterMacro {
             return """
             let \(parameter.generatedName) = try \(requestLocalName).query.get(\(parameter.type.trimmedDescription).self, at: \(renderedPath))
             """
+        case .content:
+            return """
+            let \(parameter.generatedName) = try \(requestLocalName).content.decode(\(parameter.type.trimmedDescription).self)
+            """
         }
     }
 
