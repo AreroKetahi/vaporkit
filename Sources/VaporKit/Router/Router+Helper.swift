@@ -50,3 +50,46 @@ public struct Path<Value> where Value: LosslessStringConvertible {
     }
 }
 
+// MARK: Query
+
+/// Marks a typed handler function parameter as a Vapor request query value.
+///
+/// Use `@Query` on parameters after the request parameter in a typed route
+/// handler. Without a key, the generated route handler decodes the full query
+/// string into the wrapped type:
+///
+/// ```swift
+/// @Get("search")
+/// func search(req: Request, @Query input: SearchQuery) throws -> [Result] {
+///     try find(input, on: req)
+/// }
+/// ```
+///
+/// Pass a key to decode one value from the query container. Dots and slashes in
+/// the key are treated as key-path separators, so `@Query("user.name")` and
+/// `@Query("user/name")` both read `req.query.get(String.self, at: "user",
+/// "name")`.
+///
+/// `Value` must conform to `Decodable` because Vapor query values are parsed
+/// with `Request.query.decode(_:)` or `Request.query.get(_:at:)`. `@Query`
+/// itself does not parse the request; it is a marker wrapper used by the router
+/// macro.
+@propertyWrapper
+public struct Query<Value> where Value: Decodable {
+    /// The typed value injected from the request query string.
+    public let wrappedValue: Value
+
+    /// Creates a query parameter wrapper.
+    ///
+    /// This initializer is used when Swift applies the property wrapper to the
+    /// original handler function. The optional `key` argument is read by
+    /// ``Router(_:)`` during macro expansion. When `key` is omitted, the macro
+    /// decodes the full query string into `Value`.
+    ///
+    /// - Parameters:
+    ///   - wrappedValue: The already-decoded query value.
+    ///   - key: An optional query key or key path.
+    public init(wrappedValue: Value, _ key: StaticString? = nil) {
+        self.wrappedValue = wrappedValue
+    }
+}

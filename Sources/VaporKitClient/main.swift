@@ -240,8 +240,9 @@ struct TypedParameterController {
     @DisableParameterCheck
     func find(
         req: Request,
-        @Path("ip") id: String
+        @Path id: String,
+        @Query("name") name: String
     ) -> some AsyncResponseEncodable {
-        id
+        "\(id)-\(name)"
     }
 }

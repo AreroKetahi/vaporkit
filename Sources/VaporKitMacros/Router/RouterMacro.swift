@@ -26,6 +26,7 @@ public struct RouterMacro {
     static let webSocketDidUpgradeLabel = "didUpgrade"
     static let autoRegisterableAttributeName = "AutoRegisterable"
     static let typedPathAttributeName = "Path"
+    static let typedQueryAttributeName = "Query"
 
     /// Every freestanding route declaration macro supported by `@Router`.
     enum RouteMacroName: String {
@@ -86,8 +87,9 @@ public struct RouterMacro {
         case webSocketCloseInvalidSignature = "#OnClose handlers must not declare parameters."
         case webSocketInvalidAdditionalClosureLabel = "#WebSocket only supports an additional trailing closure labeled didUpgrade:."
         case typedRouteRequiresRequestParameter = "Typed route functions must accept exactly one Request or Vapor.Request parameter."
-        case typedRouteRequiresPathParameterAttribute = "Typed route parameters after Request must be marked with @Path."
+        case typedRouteRequiresInjectedParameterAttribute = "Typed handler parameters after Request must be marked with @Path or @Query."
         case typedRoutePathRequiresLiteralName = "@Path requires a static string parameter name."
+        case typedRouteQueryRequiresLiteralKey = "@Query requires a static string key."
 
         var message: String { rawValue }
         var diagnosticID: MessageID { .init(domain: DiagnosticSeverity.domain, id: "\(self)") }
@@ -173,6 +175,7 @@ public struct RouterMacro {
         let method: String
         let middlewares: [ExprSyntax]
         let requestParameter: FunctionParameterMetadata
+        let injectedParameters: [InjectedParameterMetadata]
         let pathParameters: [PathParameterMetadata]
         let parameterCheckOverride: StaticCheckOverride?
         let functionName: TokenSyntax
@@ -198,6 +201,19 @@ public struct RouterMacro {
         let type: TypeSyntax
         let generatedName: TokenSyntax
         let pathAttribute: AttributeSyntax
+    }
+
+    struct InjectedParameterMetadata {
+        let externalName: String?
+        let localName: String
+        let type: TypeSyntax
+        let generatedName: TokenSyntax
+        let source: InjectedParameterSource
+    }
+
+    enum InjectedParameterSource {
+        case path(name: String)
+        case query(keyPath: [String]?)
     }
 
     /// A child `RouteCollection` registration declared with `#Register(...)`.

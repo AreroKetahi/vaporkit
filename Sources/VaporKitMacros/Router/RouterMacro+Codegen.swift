@@ -118,14 +118,12 @@ extension RouterMacro {
     static func handlerDeclaration(for metadata: TypedHandlerMethodMetadata) -> DeclSyntax {
         let requestParameter = renderedParameter(metadata.requestParameter)
         let requestLocalName = metadata.requestParameter.localName
-        let extractions = metadata.pathParameters.map { parameter in
-            """
-            let \(parameter.generatedName) = try \(requestLocalName).parameters.require("\(parameter.pathName)", as: \(parameter.type.trimmedDescription).self)
-            """
+        let extractions = metadata.injectedParameters.map { parameter in
+            injectedParameterExtraction(parameter, requestLocalName: requestLocalName)
         }.joined(separator: "\n")
         let arguments = (
             [renderedArgument(metadata.requestParameter, value: requestLocalName)] +
-            metadata.pathParameters.map { parameter in
+            metadata.injectedParameters.map { parameter in
                 renderedArgument(parameter, value: parameter.generatedName.text)
             }
         ).joined(separator: ", ")
@@ -137,6 +135,27 @@ extension RouterMacro {
             return \(raw: callPrefix)\(metadata.functionName)(\(raw: arguments))
         }
         """
+    }
+
+    static func injectedParameterExtraction(
+        _ parameter: InjectedParameterMetadata,
+        requestLocalName: String
+    ) -> String {
+        switch parameter.source {
+        case .path(let name):
+            return """
+            let \(parameter.generatedName) = try \(requestLocalName).parameters.require("\(name)", as: \(parameter.type.trimmedDescription).self)
+            """
+        case .query(nil):
+            return """
+            let \(parameter.generatedName) = try \(requestLocalName).query.decode(\(parameter.type.trimmedDescription).self)
+            """
+        case .query(.some(let keyPath)):
+            let renderedPath = keyPath.map { #""\#($0)""# }.joined(separator: ", ")
+            return """
+            let \(parameter.generatedName) = try \(requestLocalName).query.get(\(parameter.type.trimmedDescription).self, at: \(renderedPath))
+            """
+        }
     }
 
     static func handlerDeclaration(for metadata: WebSocketMetadata) -> DeclSyntax {
@@ -234,7 +253,7 @@ extension RouterMacro {
         return "\(externalName): \(value)"
     }
 
-    static func renderedArgument(_ parameter: PathParameterMetadata, value: String) -> String {
+    static func renderedArgument(_ parameter: InjectedParameterMetadata, value: String) -> String {
         guard let externalName = parameter.externalName else {
             return value
         }

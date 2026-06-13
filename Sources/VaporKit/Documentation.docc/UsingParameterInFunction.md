@@ -1,7 +1,7 @@
 # Using Parameters in Functions
 
 Write route handlers as regular functions and let VaporKit inject typed path
-parameters.
+and query parameters.
 
 ## Overview
 
@@ -14,8 +14,8 @@ Vapor's native route parameters are read from `Request.parameters`:
 }
 ```
 
-Typed handler functions keep the same Vapor route model but move the path
-parameter into the function signature. Attach an HTTP method macro to a
+Typed handler functions keep the same Vapor route model but move path and query
+parameters into the function signature. Attach an HTTP method macro to a
 function and mark injected path parameters with ``Path``:
 
 ```swift
@@ -137,6 +137,49 @@ Path parameter values must conform to `LosslessStringConvertible`, matching
 Vapor's `Request.parameters.require(_:as:)` API. Standard types such as
 `String`, `Int`, `Double`, and `Bool` are supported by the standard library.
 Vapor also makes `UUID` usable as a route parameter type.
+
+## Query Parameters
+
+Use ``Query`` for values decoded from `Request.query`:
+
+```swift
+struct SearchQuery: Decodable {
+    var term: String
+    var limit: Int
+}
+
+@Get("search")
+func search(req: Request, @Query input: SearchQuery) async throws -> [ProjectDTO] {
+    try await searchProjects(input, on: req.db)
+}
+```
+
+When no key is provided, the generated wrapper decodes the full query string:
+
+```swift
+let <generated-input> = try req.query.decode(SearchQuery.self)
+```
+
+Pass a key to decode one value with Vapor's query key-path API:
+
+```swift
+@Get("search")
+func search(
+    req: Request,
+    @Query("filter.name") name: String,
+    @Query("page/number") page: Int
+) -> String {
+    "\(name):\(page)"
+}
+```
+
+Dots and slashes both split the key into path components. The generated wrapper
+uses `req.query.get(_:at:)`:
+
+```swift
+let <generated-name> = try req.query.get(String.self, at: "filter", "name")
+let <generated-page> = try req.query.get(Int.self, at: "page", "number")
+```
 
 ## Static Parameter Checking
 

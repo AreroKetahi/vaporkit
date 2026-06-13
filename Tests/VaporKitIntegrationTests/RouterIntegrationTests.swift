@@ -49,6 +49,11 @@ import VaporTesting
                 #expect(response.status == .ok)
                 #expect(response.body.string == "typed:42:GET")
             }
+
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed/42/query?term=vapor&limit=2&filter[name]=owner&page[number]=3") { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "query:42:vapor:2:owner:3")
+            }
         }
     }
 }

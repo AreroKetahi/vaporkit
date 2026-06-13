@@ -35,6 +35,16 @@ extension RouterMacro {
         }
     }
 
+    static func queryAttribute(from attributes: AttributeListSyntax)
+        -> AttributeSyntax?
+    {
+        attributes.compactMap { element in
+            element.as(AttributeSyntax.self)
+        }.first { attribute in
+            attributeName(of: attribute) == typedQueryAttributeName
+        }
+    }
+
     static func pathParameterName(
         from attribute: AttributeSyntax,
         defaultName: String
@@ -48,6 +58,29 @@ extension RouterMacro {
         }
 
         return stringLiteralValue(from: firstArgument.expression)
+    }
+
+    static func queryKeyPath(from attribute: AttributeSyntax) -> [String]?? {
+        guard case .argumentList(let arguments) = attribute.arguments else {
+            return nil
+        }
+
+        guard let firstArgument = arguments.first(where: { $0.label == nil }) else {
+            return arguments.isEmpty ? nil : .some(nil)
+        }
+
+        guard let key = stringLiteralValue(from: firstArgument.expression) else {
+            return .some(nil)
+        }
+
+        if key.isEmpty {
+            return .some(.some([""]))
+        }
+
+        let keyPath = key.split { character in
+            character == "." || character == "/"
+        }.map(String.init)
+        return .some(.some(keyPath.isEmpty ? [key] : keyPath))
     }
 
     static func middlewareExpressions(from attributes: AttributeListSyntax)

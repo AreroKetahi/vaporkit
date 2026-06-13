@@ -116,6 +116,60 @@ struct RouterMacroTypedHandlerTests {
         throw Test.cancel("macros are only supported when running tests for the host platform")
     #endif
     }
+
+    @Test
+    func registersTypedHandlerFunctionsWithQueryParameters() throws {
+    #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Get("projects/:id/search")
+                func search(
+                    req: Request,
+                    @Path id: UUID,
+                    @Query input: SearchQuery,
+                    @Query("filter.name") name: String,
+                    @Query("page/number") page: Int
+                ) async throws -> [ProjectDTO] {
+                    try await searchProjects(id: id, input: input, name: name, page: page, on: req.db)
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+                func search(
+                    req: Request,
+                    @Path id: UUID,
+                    @Query input: SearchQuery,
+                    @Query("filter.name") name: String,
+                    @Query("page/number") page: Int
+                ) async throws -> [ProjectDTO] {
+                    try await searchProjects(id: id, input: input, name: name, page: page, on: req.db)
+                }
+            
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "api", "projects", ":id", "search", use: __macro_local_6searchfMu_)
+                }
+            
+                func __macro_local_6searchfMu_(req: Vapor.Request) async throws -> [ProjectDTO] {
+                    let __macro_local_2idfMu_ = try req.parameters.require("id", as: UUID.self)
+                    let __macro_local_5inputfMu_ = try req.query.decode(SearchQuery.self)
+                    let __macro_local_4namefMu_ = try req.query.get(String.self, at: "filter", "name")
+                    let __macro_local_4pagefMu_ = try req.query.get(Int.self, at: "page", "number")
+                    return try await search(req: req, id: __macro_local_2idfMu_, input: __macro_local_5inputfMu_, name: __macro_local_4namefMu_, page: __macro_local_4pagefMu_)
+                }
+            }
+            
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+    #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+    #endif
+    }
     
     @Test
     func rejectsMissingRequiredPathParameterInTypedHandler() throws {
@@ -139,6 +193,37 @@ struct RouterMacroTypedHandlerTests {
                                         ┬────────────
                                         ╰─ 🛑 Required path parameter is not declared in this route URL.
                     true
+                }
+            }
+            """
+        }
+    #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+    #endif
+    }
+
+    @Test
+    func rejectsDynamicQueryParameterKeyInTypedHandler() throws {
+    #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Get("search")
+                func search(req: Request, @Query(key) name: String) -> String {
+                    name
+                }
+            }
+            """
+        } diagnostics: {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Get("search")
+                func search(req: Request, @Query(key) name: String) -> String {
+                                          ┬──────────
+                                          ╰─ 🛑 @Query requires a static string key.
+                    name
                 }
             }
             """

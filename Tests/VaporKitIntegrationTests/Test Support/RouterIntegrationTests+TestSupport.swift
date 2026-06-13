@@ -53,8 +53,24 @@ struct VaporKitIntegrationUsersRouter {
     func typed(_ req: Request, @Path id: String) async throws -> String {
         "typed:\(id):\(req.method.rawValue)"
     }
+
+    @Get("typed/:id/query")
+    func typedQuery(
+        _ req: Request,
+        @Path id: String,
+        @Query input: SearchQuery,
+        @Query("filter.name") filterName: String,
+        @Query("page/number") page: Int
+    ) async throws -> String {
+        "query:\(id):\(input.term):\(input.limit):\(filterName):\(page)"
+    }
 }
 
 struct EchoPayload: Content {
     var message: String
+}
+
+struct SearchQuery: Decodable {
+    var term: String
+    var limit: Int
 }
