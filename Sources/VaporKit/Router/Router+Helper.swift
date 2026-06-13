@@ -74,6 +74,10 @@ public struct Path<Value> where Value: LosslessStringConvertible {
 /// with `Request.query.decode(_:)` or `Request.query.get(_:at:)`. `@Query`
 /// itself does not parse the request; it is a marker wrapper used by the router
 /// macro.
+///
+/// Optional parameters and parameters with default values are decoded with
+/// `try?`. Defaults are applied when the generated wrapper calls the original
+/// function.
 @propertyWrapper
 public struct Query<Value> where Value: Decodable {
     /// The typed value injected from the request query string.
@@ -113,6 +117,10 @@ public struct Query<Value> where Value: Decodable {
 /// `Value` must conform to `Decodable` because Vapor content values are parsed
 /// with `Request.content.decode(_:)`. `@ContentBody` itself does not parse the
 /// request; it is a marker wrapper used by the router macro.
+///
+/// Optional parameters and parameters with default values are decoded with
+/// `try?`. Defaults are applied when the generated wrapper calls the original
+/// function.
 @propertyWrapper
 public struct ContentBody<Value> where Value: Decodable {
     /// The typed value injected from the request body.

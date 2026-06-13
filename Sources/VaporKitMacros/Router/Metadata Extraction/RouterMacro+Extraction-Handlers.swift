@@ -74,6 +74,7 @@ extension RouterMacro {
         for parameter in remainingParameters {
             let localName = localParameterName(from: parameter)
             let generatedName = context.makeUniqueName(localName)
+            let defaultValue = parameter.defaultValue?.value
 
             if let pathAttribute = pathAttribute(from: parameter.attributes) {
                 guard let pathName = pathParameterName(
@@ -94,6 +95,7 @@ extension RouterMacro {
                         externalName: externalParameterName(from: parameter),
                         localName: localName,
                         type: parameter.type,
+                        defaultValue: defaultValue,
                         generatedName: generatedName,
                         source: .path(name: pathName)
                     )
@@ -118,6 +120,7 @@ extension RouterMacro {
                             externalName: externalParameterName(from: parameter),
                             localName: localName,
                             type: parameter.type,
+                            defaultValue: defaultValue,
                             generatedName: generatedName,
                             source: .query(keyPath: nil)
                         )
@@ -140,6 +143,7 @@ extension RouterMacro {
                         externalName: externalParameterName(from: parameter),
                         localName: localName,
                         type: parameter.type,
+                        defaultValue: defaultValue,
                         generatedName: generatedName,
                         source: .query(keyPath: keyPath)
                     )
@@ -153,6 +157,7 @@ extension RouterMacro {
                         externalName: externalParameterName(from: parameter),
                         localName: localName,
                         type: parameter.type,
+                        defaultValue: defaultValue,
                         generatedName: generatedName,
                         source: .content
                     )

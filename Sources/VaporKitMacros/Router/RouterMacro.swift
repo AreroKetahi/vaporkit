@@ -208,6 +208,7 @@ public struct RouterMacro {
         let externalName: String?
         let localName: String
         let type: TypeSyntax
+        let defaultValue: ExprSyntax?
         let generatedName: TokenSyntax
         let source: InjectedParameterSource
     }

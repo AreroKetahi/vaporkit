@@ -222,6 +222,66 @@ struct RouterMacroTypedHandlerTests {
         throw Test.cancel("macros are only supported when running tests for the host platform")
     #endif
     }
+
+    @Test
+    func registersTypedHandlerFunctionsWithOptionalAndDefaultInjectedParameters() throws {
+    #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Post("projects/:id/defaults")
+                func update(
+                    req: Request,
+                    @Path id: UUID,
+                    @Query("filter.name") name: String?,
+                    @Query("page") page: Int = 1,
+                    @Query("mode") mode: String? = "full",
+                    @ContentBody body: UpdateProjectBody?,
+                    @ContentBody fallback: UpdateProjectBody = .empty
+                ) async throws -> ProjectDTO {
+                    try await updateProject(id: id, name: name, page: page, mode: mode, body: body, fallback: fallback, on: req.db)
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+                func update(
+                    req: Request,
+                    @Path id: UUID,
+                    @Query("filter.name") name: String?,
+                    @Query("page") page: Int = 1,
+                    @Query("mode") mode: String? = "full",
+                    @ContentBody body: UpdateProjectBody?,
+                    @ContentBody fallback: UpdateProjectBody = .empty
+                ) async throws -> ProjectDTO {
+                    try await updateProject(id: id, name: name, page: page, mode: mode, body: body, fallback: fallback, on: req.db)
+                }
+            
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.POST, "api", "projects", ":id", "defaults", use: __macro_local_6updatefMu_)
+                }
+            
+                func __macro_local_6updatefMu_(req: Vapor.Request) async throws -> ProjectDTO {
+                    let __macro_local_2idfMu_ = try req.parameters.require("id", as: UUID.self)
+                    let __macro_local_4namefMu_ = try? req.query.get(String.self, at: "filter", "name")
+                    let __macro_local_4pagefMu_ = try? req.query.get(Int.self, at: "page")
+                    let __macro_local_4modefMu_ = try? req.query.get(String?.self, at: "mode")
+                    let __macro_local_4bodyfMu_ = try? req.content.decode(UpdateProjectBody.self)
+                    let __macro_local_8fallbackfMu_ = try? req.content.decode(UpdateProjectBody.self)
+                    return try await update(req: req, id: __macro_local_2idfMu_, name: __macro_local_4namefMu_, page: __macro_local_4pagefMu_ ?? 1, mode: __macro_local_4modefMu_ ?? "full", body: __macro_local_4bodyfMu_, fallback: __macro_local_8fallbackfMu_ ?? .empty)
+                }
+            }
+            
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+    #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+    #endif
+    }
     
     @Test
     func rejectsMissingRequiredPathParameterInTypedHandler() throws {

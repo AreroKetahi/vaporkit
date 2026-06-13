@@ -74,6 +74,18 @@ struct VaporKitIntegrationUsersRouter {
     ) async throws -> String {
         "content:\(id):\(reason):\(body.name)"
     }
+
+    @Post("typed/:id/defaults")
+    func typedDefaults(
+        _ req: Request,
+        @Path id: String,
+        @Query("name") name: String?,
+        @Query("page") page: Int = 1,
+        @Query("mode") mode: String? = "full",
+        @ContentBody body: UpdateUserBody = UpdateUserBody(name: "fallback")
+    ) async throws -> String {
+        "defaults:\(id):\(name ?? "nil"):\(page):\(mode ?? "nil"):\(body.name)"
+    }
 }
 
 struct EchoPayload: Content {

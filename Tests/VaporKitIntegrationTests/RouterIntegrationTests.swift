@@ -61,6 +61,11 @@ import VaporTesting
                 #expect(response.status == .ok)
                 #expect(response.body.string == "content:42:rename:updated")
             }
+
+            try await app.testing().test(.POST, "/_test/integration/api/users/typed/42/defaults?name=neo") { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "defaults:42:neo:1:full:fallback")
+            }
         }
     }
 }

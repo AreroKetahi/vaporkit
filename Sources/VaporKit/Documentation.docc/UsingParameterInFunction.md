@@ -181,6 +181,28 @@ let <generated-name> = try req.query.get(String.self, at: "filter", "name")
 let <generated-page> = try req.query.get(Int.self, at: "page", "number")
 ```
 
+Optional query parameters are decoded with `try?`. Default values are applied
+when calling your handler:
+
+```swift
+@Get("search")
+func search(
+    req: Request,
+    @Query("filter.name") name: String?,
+    @Query("page") page: Int = 1
+) -> String {
+    "\(name ?? "all"):\(page)"
+}
+```
+
+The generated wrapper keeps missing or invalid values from failing the route:
+
+```swift
+let <generated-name> = try? req.query.get(String.self, at: "filter", "name")
+let <generated-page> = try? req.query.get(Int.self, at: "page")
+return search(req: req, name: <generated-name>, page: <generated-page> ?? 1)
+```
+
 ## Content Parameters
 
 Use ``ContentBody`` for values decoded from `Request.content`:
@@ -203,6 +225,24 @@ The generated wrapper decodes the body before calling your function:
 
 ```swift
 let <generated-body> = try req.content.decode(CreateProjectBody.self)
+```
+
+``ContentBody`` also supports optional parameters and default values. Optional
+body parameters use `try?`; default values are applied in the generated call:
+
+```swift
+@Post("projects")
+func create(
+    req: Request,
+    @ContentBody body: CreateProjectBody = .empty
+) async throws -> ProjectDTO {
+    try await createProject(body, on: req.db)
+}
+```
+
+```swift
+let <generated-body> = try? req.content.decode(CreateProjectBody.self)
+return try await create(req: req, body: <generated-body> ?? .empty)
 ```
 
 ## Static Parameter Checking
