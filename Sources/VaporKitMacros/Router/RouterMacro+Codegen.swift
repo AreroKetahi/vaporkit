@@ -162,6 +162,16 @@ extension RouterMacro {
             return """
             let \(parameter.generatedName) = \(tryKeyword) \(requestLocalName).content.decode(\(type).self)
             """
+        case .auth:
+            if parameter.defaultValue != nil || isOptionalType(parameter.type) {
+                return """
+                let \(parameter.generatedName) = \(requestLocalName).auth.get(\(type).self)
+                """
+            }
+
+            return """
+            let \(parameter.generatedName) = try \(requestLocalName).auth.require(\(parameter.type.trimmedDescription).self)
+            """
         }
     }
 

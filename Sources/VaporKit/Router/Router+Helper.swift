@@ -137,3 +137,54 @@ public struct ContentBody<Value> where Value: Decodable {
         self.wrappedValue = wrappedValue
     }
 }
+
+// MARK: - Advanced Part
+
+/// Marks a typed handler function parameter as an authenticated Vapor user.
+///
+/// Use `@Auth` on parameters after the request parameter in a typed route
+/// handler. For required values, the generated route handler reads the value
+/// with `Request.auth.require(_:)` and passes it to the original function.
+///
+/// ```swift
+/// @Get("profile")
+/// func profile(req: Request, @Auth user: User) async throws -> UserDTO {
+///     try await loadProfile(for: user, on: req.db)
+/// }
+/// ```
+///
+/// Optional parameters use `Request.auth.get(_:)` instead:
+///
+/// ```swift
+/// @Get("profile")
+/// func profile(req: Request, @Auth user: User?) -> UserDTO? {
+///     user.map(UserDTO.init)
+/// }
+/// ```
+///
+/// The wrapped type, or the wrapped type inside an optional, must conform to
+/// `Authenticatable`. Configure authentication with normal Vapor middleware or
+/// authenticators before this route runs.
+@propertyWrapper
+public struct Auth<Value> {
+    /// The authenticated value injected from `Request.auth`.
+    public let wrappedValue: Value
+
+    /// Creates an authenticated value wrapper.
+    ///
+    /// This initializer is used when Swift applies the property wrapper to the
+    /// original handler function. ``Router(_:)`` reads the wrapper during macro
+    /// expansion and generates the authentication lookup code.
+    ///
+    /// - Parameter wrappedValue: The already-authenticated value.
+    public init(wrappedValue: Value) where Value: Authenticatable {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates an optional authenticated value wrapper.
+    ///
+    /// - Parameter wrappedValue: The optional authenticated value.
+    public init<Wrapped>(wrappedValue: Wrapped?) where Value == Wrapped?, Wrapped: Authenticatable {
+        self.wrappedValue = wrappedValue
+    }
+}

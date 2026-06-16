@@ -224,6 +224,98 @@ struct RouterMacroTypedHandlerTests {
     }
 
     @Test
+    func registersTypedHandlerFunctionsWithAuthParameters() throws {
+    #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Get("profile")
+                func profile(req: Request, @Auth user: User) async throws -> UserDTO {
+                    try await loadProfile(for: user, on: req.db)
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+                func profile(req: Request, @Auth user: User) async throws -> UserDTO {
+                    try await loadProfile(for: user, on: req.db)
+                }
+
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "api", "profile", use: __macro_local_7profilefMu_)
+                }
+
+                func __macro_local_7profilefMu_(req: Vapor.Request) async throws -> UserDTO {
+                    let __macro_local_4userfMu_ = try req.auth.require(User.self)
+                    return try await profile(req: req, user: __macro_local_4userfMu_)
+                }
+            }
+
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+    #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+    #endif
+    }
+
+    @Test
+    func registersTypedHandlerFunctionsWithOptionalAuthParameters() throws {
+    #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Get("profile")
+                func profile(req: Request, @Auth user: User?) -> String {
+                    user?.name ?? "guest"
+                }
+
+                @Get("profile/default")
+                func defaulted(req: Request, @Auth user: User = .guest) -> String {
+                    user.name
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+                func profile(req: Request, @Auth user: User?) -> String {
+                    user?.name ?? "guest"
+                }
+                func defaulted(req: Request, @Auth user: User = .guest) -> String {
+                    user.name
+                }
+
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.GET, "api", "profile", use: __macro_local_7profilefMu_)
+                    routes.on(.GET, "api", "profile", "default", use: __macro_local_9defaultedfMu_)
+                }
+
+                func __macro_local_7profilefMu_(req: Vapor.Request) async throws -> String {
+                    let __macro_local_4userfMu_ = req.auth.get(User.self)
+                    return profile(req: req, user: __macro_local_4userfMu_)
+                }
+
+                func __macro_local_9defaultedfMu_(req: Vapor.Request) async throws -> String {
+                    let __macro_local_4userfMu0_ = req.auth.get(User.self)
+                    return defaulted(req: req, user: __macro_local_4userfMu0_ ?? .guest)
+                }
+            }
+
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+    #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+    #endif
+    }
+
+    @Test
     func registersTypedHandlerFunctionsWithOptionalAndDefaultInjectedParameters() throws {
     #if canImport(VaporKitMacros)
         assertMacro {
