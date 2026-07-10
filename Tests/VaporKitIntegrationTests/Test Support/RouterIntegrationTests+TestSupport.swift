@@ -12,6 +12,25 @@ struct IntegrationHeaderMiddleware: Middleware {
     }
 }
 
+struct IntegrationAuthenticatedUser: Authenticatable {
+    static let guest = IntegrationAuthenticatedUser(name: "guest")
+
+    var name: String
+}
+
+struct IntegrationAuthMiddleware: AsyncMiddleware {
+    func respond(
+        to request: Request,
+        chainingTo next: any AsyncResponder
+    ) async throws -> Response {
+        if let name = request.headers.first(name: "X-Integration-User") {
+            request.auth.login(IntegrationAuthenticatedUser(name: name))
+        }
+
+        return try await next.respond(to: request)
+    }
+}
+
 @Router("/_test/integration/api")
 struct VaporKitIntegrationAPIRouter {
     #Get("hello") { _ in
@@ -52,6 +71,33 @@ struct VaporKitIntegrationUsersRouter {
     @Get("typed/:id")
     func typed(_ req: Request, @Path id: String) async throws -> String {
         "typed:\(id):\(req.method.rawValue)"
+    }
+
+    @Middleware(IntegrationAuthMiddleware())
+    @Get("typed-auth")
+    func typedAuth(
+        _ req: Request,
+        @Auth user: IntegrationAuthenticatedUser
+    ) async throws -> String {
+        "auth:\(user.name):\(req.method.rawValue)"
+    }
+
+    @Middleware(IntegrationAuthMiddleware())
+    @Get("typed-auth/optional")
+    func typedOptionalAuth(
+        _ req: Request,
+        @Auth user: IntegrationAuthenticatedUser?
+    ) async throws -> String {
+        "auth:\(user?.name ?? "guest"):\(req.method.rawValue)"
+    }
+
+    @Middleware(IntegrationAuthMiddleware())
+    @Get("typed-auth/default")
+    func typedDefaultAuth(
+        _ req: Request,
+        @Auth user: IntegrationAuthenticatedUser = .guest
+    ) async throws -> String {
+        "auth:\(user.name):\(req.method.rawValue)"
     }
 
     @Get("typed/:id/query")
