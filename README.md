@@ -138,7 +138,7 @@ struct APIRoutes {
 
 Use this style when a handler has named inputs or is clearer as a regular
 function. The first parameter is `Request`; additional values are declared with
-`@Path`, `@Query`, or `@ContentBody`.
+`@Path`, `@Query`, `@ContentBody`, or `@Auth`.
 
 ```swift
 struct SearchQuery: Decodable {
@@ -179,12 +179,18 @@ struct UserRoutes {
     ) async throws -> UserDTO {
         try await updateUser(id, with: body, on: req.db)
     }
+
+    @Get("profile")
+    func profile(req: Request, @Auth user: User) async throws -> UserDTO {
+        try await loadProfile(for: user, on: req.db)
+    }
 }
 ```
 
 Use `@Path` for route parameters, `@Query` for query values, and
-`@ContentBody` for request bodies. `@Query` and `@ContentBody` support optional
-types and default values.
+`@ContentBody` for request bodies. Use `@Auth` for values loaded from
+`Request.auth`. `@Query`, `@ContentBody`, and `@Auth` support optional types
+and default values.
 
 ## WebSocket Routes
 

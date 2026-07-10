@@ -28,6 +28,7 @@ public struct RouterMacro {
     static let typedPathAttributeName = "Path"
     static let typedQueryAttributeName = "Query"
     static let typedContentAttributeName = "ContentBody"
+    static let typedAuthAttributeName = "Auth"
 
     /// Every freestanding route declaration macro supported by `@Router`.
     enum RouteMacroName: String {
@@ -88,7 +89,7 @@ public struct RouterMacro {
         case webSocketCloseInvalidSignature = "#OnClose handlers must not declare parameters."
         case webSocketInvalidAdditionalClosureLabel = "#WebSocket only supports an additional trailing closure labeled didUpgrade:."
         case typedRouteRequiresRequestParameter = "Typed route functions must accept exactly one Request or Vapor.Request parameter."
-        case typedRouteRequiresInjectedParameterAttribute = "Typed handler parameters after Request must be marked with @Path, @Query, or @ContentBody."
+        case typedRouteRequiresInjectedParameterAttribute = "Typed handler parameters after Request must be marked with @Path, @Query, @ContentBody, or @Auth."
         case typedRoutePathRequiresLiteralName = "@Path requires a static string parameter name."
         case typedRouteQueryRequiresLiteralKey = "@Query requires a static string key."
 
@@ -217,6 +218,7 @@ public struct RouterMacro {
         case path(name: String)
         case query(keyPath: [String]?)
         case content
+        case auth
     }
 
     /// A child `RouteCollection` registration declared with `#Register(...)`.
