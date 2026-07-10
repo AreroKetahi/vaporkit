@@ -316,6 +316,60 @@ struct RouterMacroTypedHandlerTests {
     }
 
     @Test
+    func registersTypedHandlerFunctionsWithAuthMixedWithOtherInjectedParameters() throws {
+    #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Router("api")
+            struct MyRoute {
+                @Post("users/:id/profile")
+                func updateProfile(
+                    _ req: Request,
+                    @Path id: UUID,
+                    @Auth user: User?,
+                    @Query("audit.reason") reason: String = "manual",
+                    @ContentBody body: UpdateProfileBody
+                ) async throws -> UserDTO {
+                    try await update(id: id, user: user, reason: reason, body: body, on: req.db)
+                }
+            }
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+                func updateProfile(
+                    _ req: Request,
+                    @Path id: UUID,
+                    @Auth user: User?,
+                    @Query("audit.reason") reason: String = "manual",
+                    @ContentBody body: UpdateProfileBody
+                ) async throws -> UserDTO {
+                    try await update(id: id, user: user, reason: reason, body: body, on: req.db)
+                }
+
+                func boot(routes: any Vapor.RoutesBuilder) throws {
+                    routes.on(.POST, "api", "users", ":id", "profile", use: __macro_local_13updateProfilefMu_)
+                }
+
+                func __macro_local_13updateProfilefMu_(_ req: Vapor.Request) async throws -> UserDTO {
+                    let __macro_local_2idfMu_ = try req.parameters.require("id", as: UUID.self)
+                    let __macro_local_4userfMu_ = req.auth.get(User.self)
+                    let __macro_local_6reasonfMu_ = try? req.query.get(String.self, at: "audit", "reason")
+                    let __macro_local_4bodyfMu_ = try req.content.decode(UpdateProfileBody.self)
+                    return try await updateProfile(req, id: __macro_local_2idfMu_, user: __macro_local_4userfMu_, reason: __macro_local_6reasonfMu_ ?? "manual", body: __macro_local_4bodyfMu_)
+                }
+            }
+
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+    #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+    #endif
+    }
+
+    @Test
     func registersTypedHandlerFunctionsWithOptionalAndDefaultInjectedParameters() throws {
     #if canImport(VaporKitMacros)
         assertMacro {

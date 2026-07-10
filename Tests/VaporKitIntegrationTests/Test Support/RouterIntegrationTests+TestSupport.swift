@@ -13,6 +13,8 @@ struct IntegrationHeaderMiddleware: Middleware {
 }
 
 struct IntegrationAuthenticatedUser: Authenticatable {
+    static let guest = IntegrationAuthenticatedUser(name: "guest")
+
     var name: String
 }
 
@@ -80,12 +82,22 @@ struct VaporKitIntegrationUsersRouter {
         "auth:\(user.name):\(req.method.rawValue)"
     }
 
+    @Middleware(IntegrationAuthMiddleware())
     @Get("typed-auth/optional")
     func typedOptionalAuth(
         _ req: Request,
         @Auth user: IntegrationAuthenticatedUser?
     ) async throws -> String {
         "auth:\(user?.name ?? "guest"):\(req.method.rawValue)"
+    }
+
+    @Middleware(IntegrationAuthMiddleware())
+    @Get("typed-auth/default")
+    func typedDefaultAuth(
+        _ req: Request,
+        @Auth user: IntegrationAuthenticatedUser = .guest
+    ) async throws -> String {
+        "auth:\(user.name):\(req.method.rawValue)"
     }
 
     @Get("typed/:id/query")
