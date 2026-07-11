@@ -234,19 +234,23 @@ struct BypassStaticCheckRoutes {
 #endif
 
 @Router
+@AutoRegisterable
 struct TypedParameterController {
     @Get(":id")
     func find(
         req: Request,
         @Path id: String,
-        @Query("name") name: String,
-        @ContentBody body: MyBody? = MyBody(key: "some", value: "any")
+        @Query("username") name: String,
+        @ContentBody body: MyBody? = MyBody(key: "some", value: "any"),
+        @Auth user: User
     ) -> some AsyncResponseEncodable {
         "\(id)-\(name)"
     }
-    
+
     struct MyBody: Content {
         var key: String
         var value: String
     }
+
+    struct User: Authenticatable { }
 }

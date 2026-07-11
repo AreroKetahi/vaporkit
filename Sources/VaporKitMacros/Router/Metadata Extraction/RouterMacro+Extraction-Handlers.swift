@@ -165,6 +165,20 @@ extension RouterMacro {
                 continue
             }
 
+            if authAttribute(from: parameter.attributes) != nil {
+                injectedParameters.append(
+                    InjectedParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        type: parameter.type,
+                        defaultValue: defaultValue,
+                        generatedName: generatedName,
+                        source: .auth
+                    )
+                )
+                continue
+            }
+
             context.diagnose(
                 Diagnostic(
                     node: Syntax(parameter),

@@ -50,6 +50,41 @@ import VaporTesting
                 #expect(response.body.string == "typed:42:GET")
             }
 
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth") { request in
+                request.headers.replaceOrAdd(name: "X-Integration-User", value: "vapor")
+            } afterResponse: { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "auth:vapor:GET")
+            }
+
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth") { response in
+                #expect(response.status == .unauthorized)
+            }
+
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth/optional") { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "auth:guest:GET")
+            }
+
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth/optional") { request in
+                request.headers.replaceOrAdd(name: "X-Integration-User", value: "vapor")
+            } afterResponse: { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "auth:vapor:GET")
+            }
+
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth/default") { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "auth:guest:GET")
+            }
+
+            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth/default") { request in
+                request.headers.replaceOrAdd(name: "X-Integration-User", value: "vapor")
+            } afterResponse: { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "auth:vapor:GET")
+            }
+
             try await app.testing().test(.GET, "/_test/integration/api/users/typed/42/query?term=vapor&limit=2&filter[name]=owner&page[number]=3") { response in
                 #expect(response.status == .ok)
                 #expect(response.body.string == "query:42:vapor:2:owner:3")

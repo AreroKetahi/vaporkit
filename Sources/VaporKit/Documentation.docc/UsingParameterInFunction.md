@@ -245,6 +245,55 @@ let <generated-body> = try? req.content.decode(CreateProjectBody.self)
 return try await create(req: req, body: <generated-body> ?? .empty)
 ```
 
+## Auth Parameters
+
+Use ``Auth`` for values that Vapor authentication has already attached to the
+request. Required auth parameters use `Request.auth.require(_:)`:
+
+```swift
+struct User: Authenticatable {
+    var id: UUID
+}
+
+@Get("profile")
+func profile(req: Request, @Auth user: User) async throws -> UserDTO {
+    try await loadProfile(for: user, on: req.db)
+}
+```
+
+```swift
+let <generated-user> = try req.auth.require(User.self)
+return try await profile(req: req, user: <generated-user>)
+```
+
+Optional auth parameters use `Request.auth.get(_:)` and pass `nil` when no user
+has been authenticated:
+
+```swift
+@Get("profile")
+func profile(req: Request, @Auth user: User?) -> UserDTO? {
+    user.map(UserDTO.init)
+}
+```
+
+```swift
+let <generated-user> = req.auth.get(User.self)
+return profile(req: req, user: <generated-user>)
+```
+
+Default values are applied when no authenticated value is present:
+
+```swift
+@Get("profile")
+func profile(req: Request, @Auth user: User = .guest) -> UserDTO {
+    UserDTO(user)
+}
+```
+
+Configure authentication with normal Vapor middleware or authenticators before
+the route runs. If the request is not authenticated as that type, Vapor throws
+the same error as `Request.auth.require(_:)` for required auth parameters.
+
 ## Static Parameter Checking
 
 Typed path parameters participate in VaporKit's route parameter checks. If a
@@ -319,3 +368,4 @@ remove the repetitive parameter extraction code.
 - ``Path``
 - ``Query``
 - ``ContentBody``
+- ``Auth``

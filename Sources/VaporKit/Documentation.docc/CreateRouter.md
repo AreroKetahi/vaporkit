@@ -285,6 +285,7 @@ If you want to silence one expression, use
 
 - ``Middleware(_:)``
 - ``Register(_:)``
+- ``Auth``
 
 ### Support WebSocket
 
