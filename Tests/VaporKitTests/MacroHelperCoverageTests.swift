@@ -21,6 +21,7 @@ struct MacroHelperCoverageTests {
                 String(describing: BypassMacro.self),
                 String(describing: EmptyMacro.self),
                 String(describing: EmptyExpressionMacro.self),
+                String(describing: OpenAPISchemaMacro.self),
             ]
         )
     }

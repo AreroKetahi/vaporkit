@@ -25,6 +25,10 @@ public struct RouterMacro {
     static let webSocketMacroName = "WebSocket"
     static let webSocketDidUpgradeLabel = "didUpgrade"
     static let autoRegisterableAttributeName = "AutoRegisterable"
+    static let openAPIIgnoredAttributeName = "OpenAPIIgnored"
+    static let openAPIResponseAttributeName = "OpenAPIResponse"
+    static let openAPIRequestAttributeName = "OpenAPIRequest"
+    static let openAPIAttributeName = "OpenAPI"
     static let typedPathAttributeName = "Path"
     static let typedQueryAttributeName = "Query"
     static let typedContentAttributeName = "ContentBody"
@@ -119,6 +123,30 @@ public struct RouterMacro {
         var diagnosticID: MessageID {
             .init(domain: DiagnosticSeverity.domain, id: kind.rawValue)
         }
+    }
+
+    struct OpenAPIInferenceDiagnostic: DiagnosticMessage {
+        var message: String {
+            "Cannot infer this route's response schema. Add an explicit closure return type or @OpenAPIResponse."
+        }
+
+        var diagnosticID: MessageID {
+            .init(domain: DiagnosticSeverity.domain, id: "openAPIResponseTypeNotInferred")
+        }
+
+        var severity: SwiftDiagnostics.DiagnosticSeverity { .warning }
+    }
+
+    struct OpenAPIRequestInferenceDiagnostic: DiagnosticMessage {
+        var message: String {
+            "Cannot infer a single request body from multiple @ContentBody parameters. Add @OpenAPIRequest to select the documented body schema."
+        }
+
+        var diagnosticID: MessageID {
+            .init(domain: DiagnosticSeverity.domain, id: "openAPIRequestBodyNotInferred")
+        }
+
+        var severity: SwiftDiagnostics.DiagnosticSeverity { .warning }
     }
 
     /// Fix-its stay close to the diagnostics that use them so edits remain discoverable.

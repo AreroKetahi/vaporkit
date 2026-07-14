@@ -33,6 +33,7 @@ struct IntegrationAuthMiddleware: AsyncMiddleware {
 
 @Router("/_test/integration/api")
 struct VaporKitIntegrationAPIRouter {
+    @OpenAPIResponse(body: String.self)
     #Get("hello") { _ in
         "hello"
     }
@@ -42,11 +43,13 @@ struct VaporKitIntegrationAPIRouter {
         return payload.message
     }
 
+    @OpenAPIIgnored
     #On("status", method: .PATCH) { _ -> HTTPStatus in
         .accepted
     }
 
     @Middleware(IntegrationHeaderMiddleware())
+    @OpenAPIResponse(body: String.self)
     #Get("middleware") { _ in
         "middleware"
     }
@@ -68,6 +71,8 @@ struct VaporKitIntegrationUsersRouter {
         return "user:\(id)"
     }
 
+    @OpenAPI(operationID: "getIntegrationUser", summary: "Get integration user", tags: ["Users"])
+    @OpenAPIResponse(.ok, body: String.self)
     @Get("typed/:id")
     func typed(_ req: Request, @Path id: String) async throws -> String {
         "typed:\(id):\(req.method.rawValue)"
@@ -138,11 +143,13 @@ struct EchoPayload: Content {
     var message: String
 }
 
-struct SearchQuery: Decodable {
+@OpenAPISchema
+struct SearchQuery: Codable {
     var term: String
     var limit: Int
 }
 
+@OpenAPISchema
 struct UpdateUserBody: Content {
     var name: String
 }

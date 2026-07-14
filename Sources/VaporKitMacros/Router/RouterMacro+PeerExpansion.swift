@@ -9,19 +9,30 @@ extension RouterMacro: PeerMacro {
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        guard
-            let declaration = declaration.asProtocol((any DeclGroupSyntax).self),
-            hasAttribute(named: autoRegisterableAttributeName, in: declaration.attributes),
-            let typeName = nominalTypeName(of: declaration)
-        else {
+        guard let declaration = declaration.asProtocol((any DeclGroupSyntax).self),
+              let typeName = nominalTypeName(of: declaration) else {
             return []
+        }
+
+        var peers: [DeclSyntax] = []
+        if !hasAttribute(named: openAPIIgnoredAttributeName, in: declaration.attributes) {
+            peers.append(contentsOf: openAPIRecordDeclarations(
+                for: declaration,
+                typeName: typeName,
+                node: node,
+                context: context
+            ))
+        }
+
+        guard hasAttribute(named: autoRegisterableAttributeName, in: declaration.attributes) else {
+            return peers
         }
 
         let accessorName = context.makeUniqueName("VaporKitAutoRegister_accessor")
         let recordName = context.makeUniqueName("VaporKitAutoRegister_record")
         let descriptorID = "\(typeName)"
 
-        return [
+        peers.append(contentsOf: [
             """
             @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
             private nonisolated let \(accessorName): VaporKit._RouteRegisterAccessor = { outValue, type, _, _ in
@@ -61,6 +72,7 @@ extension RouterMacro: PeerMacro {
                 0
             )
             """
-        ]
+        ])
+        return peers
     }
 }

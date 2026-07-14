@@ -263,7 +263,7 @@ private func _stripCOFFSwiftPadding(
     )
 }
 
-private func _findCOFFSections(
+func _findCOFFSections(
     section: String
 ) -> [UnsafeRawBufferPointer] {
     HMODULE._allLoadedModules.compactMap { module in

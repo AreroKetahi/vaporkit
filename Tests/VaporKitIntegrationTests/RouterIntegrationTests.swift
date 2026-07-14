@@ -3,6 +3,32 @@ import VaporKit
 import VaporTesting
 
 @Suite struct RouterIntegrationTests {
+    @Test func openAPIRouterMetadataIsDiscoveredFromItsOwnSection() throws {
+        let descriptors = _OpenAPIDiscovery.discover()
+        let api = try #require(
+            descriptors.first { $0.identifier == "VaporKitIntegrationAPIRouter" }
+        )
+        #expect(api.path == "/_test/integration/api")
+        #expect(api.registeredRouters == ["VaporKitIntegrationUsersRouter"])
+
+        let users = try #require(
+            descriptors.first { $0.identifier == "VaporKitIntegrationUsersRouter" }
+        )
+        let typed = try #require(
+            users.handlers.first { $0.identifier == "VaporKitIntegrationUsersRouter.typed" }
+        )
+        #expect(typed.path == "typed/:id")
+        #expect(typed.operationID == "getIntegrationUser")
+        #expect(typed.responses.first?.status == 200)
+
+        let document = try OpenAPIDocumentBuilder().build(
+            title: "Integration",
+            version: "1",
+            descriptors: [api, users]
+        )
+        #expect(document.paths["/_test/integration/api/users/typed/{id}"]?["get"] != nil)
+    }
+
     @Test func routerMacrosRegisterWorkingVaporRoutes() async throws {
         try await withApp { app in
             try app.register(collection: VaporKitIntegrationAPIRouter())
