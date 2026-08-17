@@ -16,6 +16,8 @@ public enum OpenAPIDocumentBuilderError: Error, CustomStringConvertible {
     case routerCycle([String])
     /// Multiple handlers resolve to the same HTTP method and complete path.
     case duplicateOperation(method: String, path: String)
+    /// Multiple responses on one operation use the same HTTP status code.
+    case duplicateResponse(status: UInt, method: String, path: String)
 
     public var description: String {
         switch self {
@@ -27,6 +29,8 @@ public enum OpenAPIDocumentBuilderError: Error, CustomStringConvertible {
             return "OpenAPI router registration cycle: \(identifiers.joined(separator: " -> "))."
         case .duplicateOperation(let method, let path):
             return "Duplicate OpenAPI operation: \(method.uppercased()) \(path)."
+        case .duplicateResponse(let status, let method, let path):
+            return "Duplicate OpenAPI response \(status): \(method.uppercased()) \(path)."
         }
     }
 }

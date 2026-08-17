@@ -12,8 +12,17 @@ import Foundation
 /// Use this type when implementing ``OpenAPISchema`` manually. Most model
 /// types can use the ``OpenAPISchema()`` macro instead.
 public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
-    /// The JSON value type, such as `object`, `array`, or `string`.
-    public var type: OpenAPISchemaType?
+    /// The JSON value types accepted by the schema.
+    ///
+    /// OpenAPI encodes a single value as a string and multiple values as a
+    /// JSON Schema type array.
+    public var types: [OpenAPISchemaType]?
+
+    /// The schema's sole JSON value type, if it accepts exactly one type.
+    public var type: OpenAPISchemaType? {
+        get { types?.count == 1 ? types?.first : nil }
+        set { types = newValue.map { [$0] } }
+    }
     /// An optional format refining ``type``, such as `uuid` or `int64`.
     public var format: OpenAPISchemaFormat?
     /// A JSON Reference to another schema.
@@ -24,11 +33,10 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     public var properties: [String: OpenAPISchemaMetadata]?
     /// The schema accepted for arbitrary object property values.
     public var additionalProperties: OpenAPISchemaItems?
+    /// Alternative schemas accepted by this schema.
+    public var anyOf: [OpenAPISchemaItems]?
     /// Property names required on an object value.
     public var required: [String]?
-    /// Whether the schema also accepts `null`.
-    public var nullable: Bool
-
     /// Creates an OpenAPI schema description.
     ///
     /// - Parameters:
@@ -38,8 +46,8 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     ///   - items: The element schema for an array.
     ///   - properties: Named schema types for object properties.
     ///   - additionalProperties: The schema for arbitrary object values.
+    ///   - anyOf: Alternative schemas accepted by this schema.
     ///   - required: Required object property names.
-    ///   - nullable: Whether the value may be `null`.
     public init(
         type: OpenAPISchemaType? = nil,
         format: OpenAPISchemaFormat? = nil,
@@ -47,22 +55,60 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
         items: OpenAPISchemaMetadata? = nil,
         properties: [String: any OpenAPISchema.Type]? = nil,
         additionalProperties: OpenAPISchemaMetadata? = nil,
-        required: [String]? = nil,
-        nullable: Bool = false
+        anyOf: [OpenAPISchemaMetadata]? = nil,
+        required: [String]? = nil
     ) {
-        self.type = type
+        self.types = type.map { [$0] }
         self.format = format
         self.reference = reference
         self.items = items.map(OpenAPISchemaItems.init)
         self.properties = properties?.mapValues { $0.openAPISchema }
         self.additionalProperties = additionalProperties.map(OpenAPISchemaItems.init)
+        self.anyOf = anyOf?.map(OpenAPISchemaItems.init)
         self.required = required
-        self.nullable = nullable
     }
 
     enum CodingKeys: String, CodingKey {
-        case type, format, items, properties, additionalProperties, required, nullable
+        case type, format, items, properties, additionalProperties, anyOf, required
         case reference = "$ref"
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let type = try? container.decode(OpenAPISchemaType.self, forKey: .type) {
+            types = [type]
+        } else {
+            types = try container.decodeIfPresent([OpenAPISchemaType].self, forKey: .type)
+        }
+        format = try container.decodeIfPresent(OpenAPISchemaFormat.self, forKey: .format)
+        reference = try container.decodeIfPresent(String.self, forKey: .reference)
+        items = try container.decodeIfPresent(OpenAPISchemaItems.self, forKey: .items)
+        properties = try container.decodeIfPresent(
+            [String: OpenAPISchemaMetadata].self,
+            forKey: .properties
+        )
+        additionalProperties = try container.decodeIfPresent(
+            OpenAPISchemaItems.self,
+            forKey: .additionalProperties
+        )
+        anyOf = try container.decodeIfPresent([OpenAPISchemaItems].self, forKey: .anyOf)
+        required = try container.decodeIfPresent([String].self, forKey: .required)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        if let types, types.count == 1 {
+            try container.encode(types[0], forKey: .type)
+        } else {
+            try container.encodeIfPresent(types, forKey: .type)
+        }
+        try container.encodeIfPresent(format, forKey: .format)
+        try container.encodeIfPresent(reference, forKey: .reference)
+        try container.encodeIfPresent(items, forKey: .items)
+        try container.encodeIfPresent(properties, forKey: .properties)
+        try container.encodeIfPresent(additionalProperties, forKey: .additionalProperties)
+        try container.encodeIfPresent(anyOf, forKey: .anyOf)
+        try container.encodeIfPresent(required, forKey: .required)
     }
 }
 

@@ -15,9 +15,16 @@ private struct OpenAPITestDTO {
         let schema = OpenAPITestDTO.openAPISchema
         #expect(schema.type == .object)
         #expect(schema.properties?["id"]?.format == .uuid)
-        #expect(schema.properties?["nickname"]?.type == .string)
+        #expect(schema.properties?["nickname"]?.types == [.string, .null])
         #expect(schema.properties?["scores"]?.items?.schema.type == .integer)
         #expect(schema.required == ["id", "scores"])
+    }
+
+    @Test func optionalSchemaEncodesAnOpenAPI31TypeUnion() throws {
+        let data = try JSONEncoder().encode(String?.openAPISchema)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(object["type"] as? [String] == ["string", "null"])
+        #expect(object["nullable"] == nil)
     }
 
     @Test func stringKeyedDictionaryUsesAdditionalPropertiesSchema() throws {
@@ -171,6 +178,33 @@ private struct OpenAPITestDTO {
         )
         #expect(throws: OpenAPIDocumentBuilderError.self) {
             try OpenAPIDocumentBuilder().build(title: "Test", version: "1", descriptors: [a, b])
+        }
+    }
+
+    @Test func duplicateResponseStatusFailsWithoutTrapping() throws {
+        let router = _OpenAPIRouterDescriptor(
+            identifier: "Users",
+            path: "users",
+            handlers: [
+                .init(
+                    identifier: "Users.show",
+                    method: "GET",
+                    path: ":id",
+                    responses: [
+                        .init(status: .ok, body: String.self),
+                        .init(status: .ok, body: OpenAPITestDTO.self),
+                    ]
+                )
+            ],
+            registeredRouters: []
+        )
+
+        #expect(throws: OpenAPIDocumentBuilderError.self) {
+            try OpenAPIDocumentBuilder().build(
+                title: "Test",
+                version: "1",
+                descriptors: [router]
+            )
         }
     }
 

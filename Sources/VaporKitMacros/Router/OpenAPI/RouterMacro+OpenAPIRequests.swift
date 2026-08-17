@@ -75,11 +75,34 @@ extension RouterMacro {
             ) else { return nil }
             return nominalTypeName(of: nestedDeclaration)
         })
-        let rawType = type.trimmedDescription
-        let baseType = optionalWrappedTypeDescription(of: type) ?? rawType
-        guard nestedTypes.contains(baseType) else { return rawType }
-        return optionalWrappedTypeDescription(of: type) == nil
-            ? "\(routerIdentifier).\(baseType)"
-            : "\(routerIdentifier).\(baseType)?"
+        guard !nestedTypes.isEmpty else { return type.trimmedDescription }
+        return NestedOpenAPISchemaTypeRewriter(
+            nestedTypes: nestedTypes,
+            routerIdentifier: routerIdentifier
+        ).rewrite(type).trimmedDescription
+    }
+
+    private final class NestedOpenAPISchemaTypeRewriter: SyntaxRewriter {
+        private let nestedTypes: Set<String>
+        private let routerIdentifier: String
+
+        init(nestedTypes: Set<String>, routerIdentifier: String) {
+            self.nestedTypes = nestedTypes
+            self.routerIdentifier = routerIdentifier
+            super.init(viewMode: .sourceAccurate)
+        }
+
+        override func visit(_ node: IdentifierTypeSyntax) -> TypeSyntax {
+            let rewritten = super.visit(node)
+            guard let identifier = rewritten.as(IdentifierTypeSyntax.self),
+                  nestedTypes.contains(identifier.name.text) else {
+                return rewritten
+            }
+            return TypeSyntax(MemberTypeSyntax(
+                baseType: IdentifierTypeSyntax(name: .identifier(routerIdentifier)),
+                name: identifier.name,
+                genericArgumentClause: identifier.genericArgumentClause
+            ))
+        }
     }
 }

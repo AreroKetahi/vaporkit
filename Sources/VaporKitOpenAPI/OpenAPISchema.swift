@@ -10,8 +10,8 @@ import Foundation
 /// Synthesizes ``OpenAPISchema`` conformance for a struct or class.
 ///
 /// Each stored property must have an explicit type that also conforms to
-/// ``OpenAPISchema``. Optional properties are emitted as nullable and omitted
-/// from the schema's required-property list.
+/// ``OpenAPISchema``. Optional properties include `null` in their OpenAPI 3.1
+/// type declaration and are omitted from the schema's required-property list.
 @attached(extension, conformances: OpenAPISchema, names: named(openAPISchema))
 public macro OpenAPISchema() = #externalMacro(
     module: "VaporKitMacros",

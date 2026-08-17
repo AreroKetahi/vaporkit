@@ -103,16 +103,25 @@ public struct OpenAPIDocumentBuilder: Sendable {
                     ]
                 )
             }
-            let responses = Dictionary(uniqueKeysWithValues: handler.responses.map { response in
-                (String(response.status), OpenAPIDocument.Response(
+            var responses: [String: OpenAPIDocument.Response] = [:]
+            for response in handler.responses {
+                let status = String(response.status)
+                guard responses[status] == nil else {
+                    throw OpenAPIDocumentBuilderError.duplicateResponse(
+                        status: response.status,
+                        method: method,
+                        path: path
+                    )
+                }
+                responses[status] = OpenAPIDocument.Response(
                     description: response.description,
                     content: response.hasBody ? [
                         "application/json": .init(
                             schema: response.body.openAPISchema
                         )
                     ] : nil
-                ))
-            })
+                )
+            }
             let effectiveResponses = responses.isEmpty
                 ? ["200": OpenAPIDocument.Response(description: "OK", content: nil)]
                 : responses

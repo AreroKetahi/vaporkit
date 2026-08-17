@@ -65,7 +65,13 @@ extension Dictionary: OpenAPISchema where Key == String, Value: OpenAPISchema {
 extension Optional: OpenAPISchema where Wrapped: OpenAPISchema {
     public static var openAPISchema: OpenAPISchemaMetadata {
         var schema = Wrapped.openAPISchema
-        schema.nullable = true
-        return schema
+        if var types = schema.types {
+            if !types.contains(.null) { types.append(.null) }
+            schema.types = types
+            return schema
+        }
+        return OpenAPISchemaMetadata(
+            anyOf: [schema, OpenAPISchemaMetadata(type: .null)]
+        )
     }
 }

@@ -29,7 +29,7 @@ public struct OpenAPISchemaMacro: ExtensionMacro {
             let optional = optionalWrappedType(annotation.type)
             return Property(
                 name: pattern.identifier.text,
-                type: optional ?? annotation.type,
+                type: annotation.type,
                 required: optional == nil
             )
         }

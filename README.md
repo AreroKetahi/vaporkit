@@ -6,16 +6,18 @@
 VaporKit is a Swift macro package for reducing repetitive Vapor routing and
 validation code while keeping the generated code close to Vapor's native APIs.
 
-It focuses on two workflows:
+It focuses on four workflows:
 
+- Declaring a Vapor application entry point and startup manifest.
 - Building `RouteCollection` implementations with route declaration macros.
 - Building `Validatable` models with property-level validation constraints.
+- Exporting linked router metadata as an OpenAPI 3.1 document.
 
 ## Requirements
 
 - Swift 6.3 or newer
 - Vapor 4.121.0 or newer
-- macOS, iOS, tvOS, watchOS, or Mac Catalyst targets supported by the package
+- macOS 14 or newer, or Linux
 
 ## Installation
 
@@ -141,11 +143,13 @@ function. The first parameter is `Request`; additional values are declared with
 `@Path`, `@Query`, `@ContentBody`, or `@Auth`.
 
 ```swift
-struct SearchQuery: Decodable {
+@OpenAPISchema
+struct SearchQuery: Codable {
     var term: String
     var limit: Int
 }
 
+@OpenAPISchema
 struct UpdateUserRequest: Content {
     var username: String
 }
@@ -217,6 +221,145 @@ func article(req: Request, @Path slug: String) -> String {
 `Decodable` parsing, and `converting:` uses `LosslessStringConvertible`.
 Traditional paths such as `"users/:id"` remain supported. Interpolated names
 must be static, non-empty string literals without `/` or `:`.
+
+## Application Entry Point
+
+Define application setup as a `VaporAppConfiguration` value:
+
+```swift
+struct ServerConfiguration: VaporAppConfiguration {
+    func configure(_ application: Application) async throws {
+        application.middleware.use(FileMiddleware(
+            publicDirectory: application.directory.publicDirectory
+        ))
+        try routes(application)
+    }
+}
+```
+
+Declare the executable entry point with `VaporApplication`:
+
+```swift
+@main
+struct MyServer: VaporApplication {
+    static let commandName = "my-server"
+    static let abstract = "Runs the MyServer API."
+    static let version = "1.0.0"
+
+    static let manifest = VaporAppManifest(
+        configurations: [ServerConfiguration()]
+    )
+}
+```
+
+Use `commandName`, `abstract`, `discussion`, and `version` to customize the
+Argument Parser root command. Each property has a default value and can be
+omitted.
+
+When every router uses `@AutoRegisterable`, use the built-in configuration:
+
+```swift
+@main
+struct MyServer: VaporApplication {
+    static let manifest = VaporAppManifest(
+        configurations: [AutoRegisterRoutesConfiguration.default]
+    )
+}
+```
+
+Continue passing Vapor and ConsoleKit arguments normally:
+
+```bash
+swift run MyServer --env production serve \
+  --hostname 0.0.0.0 \
+  --port 8080
+```
+
+VaporKit uses Argument Parser for the static application command hierarchy and
+passes server arguments through to Vapor's ConsoleKit parser. Configuration
+values are fixed by the static manifest and run in declaration order before the
+application lifecycle begins.
+
+Use `VaporAppLifecycleHandler` only for resources that belong to the running
+application. A configuration that throws remains responsible for cleaning up
+its own incomplete work.
+
+For migration instructions, lifecycle handlers, and custom application
+commands, see the documentation.
+
+## OpenAPI Export
+
+VaporKit can export OpenAPI metadata without starting a Vapor application or
+registering a ConsoleKit command. The router declarations only need to be
+linked into the server executable.
+
+Annotate response models with `@OpenAPISchema`. Every stored property type must
+also conform to `OpenAPISchema`, so unsupported nested schema types fail during
+compilation.
+
+```swift
+@OpenAPISchema
+struct UserDTO: Content {
+    var id: UUID
+    var name: String
+    var nickname: String?
+}
+
+@Router("api/users")
+struct UserRoutes {
+    @OpenAPI(
+        summary: "Get a user",
+        tags: ["Users"]
+    )
+    @OpenAPIResponse(.ok, body: UserDTO.self)
+    @Get(":id")
+    func show(
+        _ request: Request,
+        @Path id: UUID,
+        @Query("include.profile") includeProfile: Bool?
+    ) async throws -> UserDTO {
+        try await loadUser(id, includeProfile: includeProfile, on: request.db)
+    }
+}
+```
+
+Make the server entry point conform to `VaporApplication`, then run its
+`extract-openapi` subcommand:
+
+```swift
+@main
+struct MyServer: VaporApplication {
+    static let manifest = VaporAppManifest()
+}
+```
+
+```bash
+./.build/release/MyServer extract-openapi \
+  --title "Users API" \
+  --version "1.0.0" \
+  --output openapi.json
+```
+
+The command discovers metadata inside the server process without creating or
+starting a Vapor `Application`.
+
+Child routers declared with `#Register` are included with their full paths. Use
+`@OpenAPIIgnored` on a router or handler that should not appear in the document.
+Typed `@Path`, `@Query`, and `@ContentBody` types must conform to
+`OpenAPISchema`; a single `@ContentBody` automatically becomes the operation's
+request body. Use `@OpenAPIRequest(body:)` to describe a closure route body or
+override the inferred request metadata.
+When `@OpenAPIResponse` is omitted, the handler's explicit return type becomes
+the schema for a `200` response and must conform to `OpenAPISchema`. Closure
+routes without an explicit return type produce a warning.
+Use `@OpenAPIResponse(.created)` to override only the status, or
+`@OpenAPIResponse(body: PublicDTO.self)` to override only the body schema.
+If an explicit `@OpenAPIResponse` still has no inferable body type, VaporKit
+uses `Never` to represent that the response has no legal body value and omits
+the OpenAPI `content` field.
+
+For the complete setup and inference rules, see
+[`Export OpenAPI`](Sources/VaporKit/Documentation.docc/ExportOpenAPI.md).
 
 ## WebSocket Routes
 

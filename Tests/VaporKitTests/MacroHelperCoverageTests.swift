@@ -34,6 +34,34 @@ struct MacroHelperCoverageTests {
         #expect(!String(reflecting: bypassID).isEmpty)
     }
 
+    @Test func openAPISchemaTypesQualifyNestedTypesInsideGenericContainers() throws {
+        let declaration = try StructDeclSyntax(
+            """
+            struct ProjectRouter {
+                struct Filter {}
+                struct UpdateBody {}
+            }
+            """
+        )
+
+        #expect(
+            RouterMacro.openAPISchemaTypeDescription(
+                TypeSyntax(stringLiteral: "[Filter?]"),
+                in: declaration,
+                routerIdentifier: "ProjectRouter"
+            )
+            == "[ProjectRouter.Filter?]"
+        )
+        #expect(
+            RouterMacro.openAPISchemaTypeDescription(
+                TypeSyntax(stringLiteral: "[String: UpdateBody]"),
+                in: declaration,
+                routerIdentifier: "ProjectRouter"
+            )
+            == "[String: ProjectRouter.UpdateBody]"
+        )
+    }
+
     @Test func validatableRuleHelpersHandleOptionalSpellings() {
         #expect(
             ValidatableMacro.propertyKind(for: TypeSyntax(stringLiteral: "String!"))

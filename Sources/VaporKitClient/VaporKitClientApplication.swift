@@ -58,6 +58,7 @@ struct CreateAdminBody: Content {
 @Router("api/users")
 struct UserRoutes {
     @Middleware(AuthMiddleware())
+    @OpenAPIResponse(.ok, body: UserDTO.self)
     #Get(":id") { req in
         let id = try req.parameters.require("id", as: UUID.self)
 
@@ -70,7 +71,7 @@ struct UserRoutes {
         )
     }
 
-    #Post("") { req in
+    #Post("") { req -> UserDTO in
         try CreateUserBody.validate(content: req)
         let body = try req.content.decode(CreateUserBody.self)
 
@@ -83,7 +84,7 @@ struct UserRoutes {
         )
     }
 
-    #Put(":id") { req in
+    #Put(":id") { req -> [String: String] in
         let id = try req.parameters.require("id", as: UUID.self)
         try UpdateUserBody.validate(content: req)
         let body = try req.content.decode(UpdateUserBody.self)
@@ -105,6 +106,7 @@ struct UserRoutes {
 
 @Router("api/admins")
 struct AdminRoutes {
+    @OpenAPIResponse(body: [String: String].self)
     #Post("") { req in
         try CreateAdminBody.validate(content: req)
         let body = try req.content.decode(CreateAdminBody.self)
@@ -115,6 +117,7 @@ struct AdminRoutes {
         ]
     }
 
+    @OpenAPIResponse(body: String.self)
     #On(":id/reset-password", method: .PATCH) { req in
         let id = try req.parameters.require("id")
         return "password reset requested for \(id)"
@@ -125,13 +128,14 @@ struct AdminRoutes {
 
 @Router("/api/preview")
 struct PreviewRoutes {
+    @OpenAPIResponse(body: String.self)
     @Middleware(AuthMiddleware(), RateLimitMiddleware())
     #Get("users/:id/profile") {
         let id = try $0.parameters.require("id")
         return "profile-\(id)"
     }
 
-    #Delete("users/:id/sessions/:sessionID") { req in
+    #Delete("users/:id/sessions/:sessionID") { req -> String in
         let userID = try req.parameters.require("id")
         let sessionID = try req.parameters.require("sessionID", as: UUID.self)
         return "\(userID)-\(sessionID.uuidString)"
@@ -143,6 +147,7 @@ struct PreviewRoutes {
     }
 
     // `#Bypass` is the explicit escape hatch for syntax-only path parameter validation.
+    @OpenAPIResponse(body: String.self)
     #Get("unsafe/:id") { request in
         let slug = try #Bypass { request.parameters.require("slug") }
         return slug
@@ -236,6 +241,7 @@ struct BypassStaticCheckRoutes {
 @Router
 @AutoRegisterable
 struct TypedParameterController {
+    @OpenAPIResponse(body: String.self)
     @Get(":id")
     func find(
         req: Request,
@@ -247,10 +253,27 @@ struct TypedParameterController {
         "\(id)-\(name)"
     }
 
+    @OpenAPISchema
     struct MyBody: Content {
         var key: String
         var value: String
     }
 
     struct User: Authenticatable { }
+}
+
+struct VaporKitClientConfiguration: VaporAppConfiguration {
+    func configure(_ application: Application) async throws {
+        try application.register(collection: UserRoutes())
+        try application.register(collection: AdminRoutes())
+        try application.register(collection: PreviewRoutes())
+        try application.autoRegisterRouters()
+    }
+}
+
+@main
+struct VaporKitClientApplication: VaporApplication {
+    static let manifest = VaporAppManifest(
+        configurations: [VaporKitClientConfiguration()]
+    )
 }

@@ -35,6 +35,10 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-macro-testing.git",
             from: "0.6.5"
         ),
+        .package(
+            url: "https://github.com/apple/swift-argument-parser.git",
+            from: "1.6.2"
+        ),
     ],
     targets: [
         .macro(
@@ -60,6 +64,7 @@ let package = Package(
                 "VaporKitMacros",
                 "VaporKitOpenAPI",
                 .product(name: "Vapor", package: "vapor"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             swiftSettings: [
                 .strictMemorySafety()
@@ -96,6 +101,11 @@ let package = Package(
         .testTarget(
             name: "VaporKitOpenAPITests",
             dependencies: ["VaporKitOpenAPI"]
+        ),
+
+        .testTarget(
+            name: "VaporKitOpenAPIExtractorTests",
+            dependencies: ["VaporKit"]
         ),
     ],
     swiftLanguageModes: [.v6]
