@@ -12,7 +12,7 @@ struct _VaporOpenAPIExtractor<App: VaporApplication>: AsyncParsableCommand {
     static var configuration: CommandConfiguration {
         CommandConfiguration(
             commandName: "extract-openapi",
-            abstract: "Exports the OpenAPI metadata linked into this executable."
+            abstract: "Exports linked OpenAPI metadata (Alpha)."
         )
     }
 

@@ -1,8 +1,11 @@
-# Export OpenAPI
+# Export OpenAPI (Alpha)
 
 Generate an OpenAPI 3.1 JSON document from a Vapor application executable.
 
 ## Overview
+
+> Warning: OpenAPI export is currently an Alpha feature. Its generated document
+> shape, schema inference rules, and public APIs may change before stabilization.
 
 The `extract-openapi` command generates the document without starting a Vapor
 `Application` or registering a ConsoleKit command. Router declarations only

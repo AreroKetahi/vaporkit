@@ -7,8 +7,8 @@ A collection of macros that simplify Vapor routing and validation.
 VaporKit is a macro-based library for reducing repetitive Vapor route
 registration and validation boilerplate. It keeps generated code close to
 Vapor's native APIs while letting application code focus on request handling
-and model rules. Linked router metadata can also be exported as OpenAPI without
-starting a Vapor application.
+and model rules. As an Alpha feature, linked router metadata can also be
+exported as OpenAPI without starting a Vapor application.
 
 ## Topics
 
@@ -36,7 +36,7 @@ starting a Vapor application.
 - ``AutoRegisterable()``
 - ``Vapor/Application/autoRegisterRouters()``
 
-### OpenAPI
+### OpenAPI (Alpha)
 
 - <doc:ExportOpenAPI>
 - ``OpenAPI(operationID:summary:description:tags:)``

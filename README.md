@@ -11,7 +11,7 @@ It focuses on four workflows:
 - Declaring a Vapor application entry point and startup manifest.
 - Building `RouteCollection` implementations with route declaration macros.
 - Building `Validatable` models with property-level validation constraints.
-- Exporting linked router metadata as an OpenAPI 3.1 document.
+- Exporting linked router metadata as an OpenAPI 3.1 document (Alpha).
 
 ## Requirements
 
@@ -287,7 +287,11 @@ its own incomplete work.
 For migration instructions, lifecycle handlers, and custom application
 commands, see the documentation.
 
-## OpenAPI Export
+## OpenAPI Export (Alpha)
+
+> [!WARNING]
+> OpenAPI export is currently an Alpha feature. Its generated document shape,
+> schema inference rules, and public APIs may change before stabilization.
 
 VaporKit can export OpenAPI metadata without starting a Vapor application or
 registering a ConsoleKit command. The router declarations only need to be
