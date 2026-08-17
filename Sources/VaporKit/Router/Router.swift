@@ -18,7 +18,7 @@ import Vapor
 @attached(member, names: named(boot), prefixed(`$`))
 @attached(extension, conformances: RouteCollection)
 @attached(peer, names: prefixed(`$`))
-public macro Router(_ url: StaticString? = nil) = #externalMacro(module: "VaporKitMacros", type: "RouterMacro")
+public macro Router(_ url: RouterPath? = nil) = #externalMacro(module: "VaporKitMacros", type: "RouterMacro")
 
 // MARK: - Handler Declaration
 
@@ -128,7 +128,7 @@ public macro Delete<T: AsyncResponseEncodable>(
 ///   - method: The HTTP method used to register the route.
 @attached(peer)
 public macro On(
-    _ url: StaticString? = nil,
+    _ url: RouterPath? = nil,
     method: HTTPMethod
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
@@ -150,7 +150,7 @@ public macro On(
 /// - Parameter url: The optional URL path relative to the enclosing router.
 @attached(peer)
 public macro Get(
-    _ url: StaticString? = nil
+    _ url: RouterPath? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
 /// Marks a typed handler function as a `POST` route.
@@ -170,7 +170,7 @@ public macro Get(
 /// - Parameter url: The optional URL path relative to the enclosing router.
 @attached(peer)
 public macro Post(
-    _ url: StaticString? = nil
+    _ url: RouterPath? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
 /// Marks a typed handler function as a `PUT` route.
@@ -191,7 +191,7 @@ public macro Post(
 /// - Parameter url: The optional URL path relative to the enclosing router.
 @attached(peer)
 public macro Put(
-    _ url: StaticString? = nil
+    _ url: RouterPath? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
 /// Marks a typed handler function as a `DELETE` route.
@@ -212,7 +212,7 @@ public macro Put(
 /// - Parameter url: The optional URL path relative to the enclosing router.
 @attached(peer)
 public macro Delete(
-    _ url: StaticString? = nil
+    _ url: RouterPath? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
 // MARK: - Register Macro
@@ -229,7 +229,7 @@ public macro Delete(
 ///   - method: The HTTP method used to register the route.
 @attached(peer)
 public macro RouteHandler(
-    _ url: StaticString? = nil,
+    _ url: RouterPath? = nil,
     method: HTTPMethod
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
@@ -253,7 +253,7 @@ public macro RouteHandler(
 /// Applies middleware to a route declaration.
 ///
 /// Attach `@Middleware` to a freestanding route macro or
-/// ``RouteHandler(_:method:)-(StaticString?,_)`` function. The route is registered
+/// ``RouteHandler(_:method:)-(RouterPath?,_)`` function. The route is registered
 /// on `routes.grouped(...)` with the supplied middleware instances.
 ///
 /// - Parameter middlewares: The middleware instances to apply to the route.

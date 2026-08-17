@@ -19,10 +19,9 @@ public macro ForwardParameters(_ parameters: StaticString...) = #externalMacro(m
 /// Disables static route-parameter checking.
 ///
 /// Attach `@DisableParameterCheck` to an ``Router(_:)`` type to disable checks for
-/// the whole router, or attach it to a route declaration or ``RouteHandler(_:method:)-(StaticString?,_)``
+/// the whole router, or attach it to a route declaration or ``RouteHandler(_:method:)-(RouterPath?,_)``
 /// function to disable checks for only that route.
 ///
 /// - Parameter severity: The highest severity to silence or downgrade.
 @attached(peer)
 public macro DisableParameterCheck(as severity: StaticCheckSeverity = .none) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
-

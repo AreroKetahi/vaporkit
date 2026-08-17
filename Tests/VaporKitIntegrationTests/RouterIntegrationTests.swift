@@ -27,6 +27,10 @@ import VaporTesting
             descriptors: [api, users]
         )
         #expect(document.paths["/_test/integration/api/users/typed/{id}"]?["get"] != nil)
+        #expect(
+            document.paths["/_test/integration/api/users/router-path/decoded/{id}"]?["get"]
+            != nil
+        )
     }
 
     @Test func routerMacrosRegisterWorkingVaporRoutes() async throws {
@@ -74,6 +78,45 @@ import VaporTesting
             try await app.testing().test(.GET, "/_test/integration/api/users/typed/42") { response in
                 #expect(response.status == .ok)
                 #expect(response.body.string == "typed:42:GET")
+            }
+
+            try await app.testing().test(
+                .GET,
+                "/_test/integration/api/users/router-path/label/vapor"
+            ) { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "label:vapor")
+            }
+
+            let id = UUID()
+            try await app.testing().test(
+                .GET,
+                "/_test/integration/api/users/router-path/decoded/\(id.uuidString)"
+            ) { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "decoded:\(id.uuidString)")
+            }
+
+            try await app.testing().test(
+                .GET,
+                "/_test/integration/api/users/router-path/decoded/not-a-uuid"
+            ) { response in
+                #expect(response.status == .unprocessableEntity)
+            }
+
+            try await app.testing().test(
+                .GET,
+                "/_test/integration/api/users/router-path/converted/42"
+            ) { response in
+                #expect(response.status == .ok)
+                #expect(response.body.string == "converted:42")
+            }
+
+            try await app.testing().test(
+                .GET,
+                "/_test/integration/api/users/router-path/converted/not-an-int"
+            ) { response in
+                #expect(response.status == .unprocessableEntity)
             }
 
             try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth") { request in

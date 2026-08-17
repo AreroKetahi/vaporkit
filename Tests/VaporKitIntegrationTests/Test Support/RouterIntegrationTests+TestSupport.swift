@@ -78,6 +78,21 @@ struct VaporKitIntegrationUsersRouter {
         "typed:\(id):\(req.method.rawValue)"
     }
 
+    @Get("router-path/label/\(key: "value")")
+    func routerPathLabel(_ req: Request, @Path value: String) -> String {
+        "label:\(value)"
+    }
+
+    @Get("router-path/decoded/\("id", decoding: UUID.self)")
+    func routerPathDecoded(_ req: Request, @Path id: UUID) -> String {
+        "decoded:\(id.uuidString)"
+    }
+
+    @Get("router-path/converted/\("page", converting: Int.self)")
+    func routerPathConverted(_ req: Request, @Path page: Int) -> String {
+        "converted:\(page)"
+    }
+
     @Middleware(IntegrationAuthMiddleware())
     @Get("typed-auth")
     func typedAuth(

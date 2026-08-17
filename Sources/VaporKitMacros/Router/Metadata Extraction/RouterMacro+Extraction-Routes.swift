@@ -25,6 +25,7 @@ extension RouterMacro {
         }
 
         let routeSpec = routeSpec(from: expansion, macroName: macroName)
+        diagnoseRouterPath(routeSpec.diagnostics, in: context)
         let requestKeyword = closureRequestKeyword(from: closure)
 
         // The original closure body is preserved verbatim and only rewritten later if `$0` was used.

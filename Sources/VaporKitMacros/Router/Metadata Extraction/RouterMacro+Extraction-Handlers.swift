@@ -30,6 +30,7 @@ extension RouterMacro {
         }
 
         let routeSpec = routeSpec(from: routeHandlerAttribute)
+        diagnoseRouterPath(routeSpec.diagnostics, in: context)
         return HandlerMethodMetadata(
             path: joinedURL(routerPrefix, routeSpec.path),
             method: routeSpec.method,
@@ -48,6 +49,7 @@ extension RouterMacro {
     static func typedHandlerMethodMetadata(
         from member: MemberBlockItemSyntax,
         routerPrefix: String?,
+        routerPathParameterStrategies: [String: PathParameterStrategy],
         context: some MacroExpansionContext
     ) -> TypedHandlerMethodMetadata? {
         guard let function = member.decl.as(FunctionDeclSyntax.self),
@@ -189,8 +191,15 @@ extension RouterMacro {
         }
 
         let routeSpec = routeSpec(from: routeAttribute, macroName: macroName)
+        diagnoseRouterPath(routeSpec.diagnostics, in: context)
+        let pathParameterStrategies = routerPathParameterStrategies.merging(
+            routeSpec.pathParameterStrategies
+        ) { _, routeStrategy in
+            routeStrategy
+        }
         return TypedHandlerMethodMetadata(
             path: joinedURL(routerPrefix, routeSpec.path),
+            pathParameterStrategies: pathParameterStrategies,
             method: routeSpec.method,
             middlewares: middlewareExpressions(from: function.attributes),
             requestParameter: requestParameter,

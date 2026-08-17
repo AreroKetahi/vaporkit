@@ -96,6 +96,11 @@ public struct RouterMacro {
         case typedRouteRequiresInjectedParameterAttribute = "Typed handler parameters after Request must be marked with @Path, @Query, @ContentBody, or @Auth."
         case typedRoutePathRequiresLiteralName = "@Path requires a static string parameter name."
         case typedRouteQueryRequiresLiteralKey = "@Query requires a static string key."
+        case routerPathRequiresLiteralName = "Router path parameter names must be string literals."
+        case routerPathEmptyName = "Router path parameter names must not be empty."
+        case routerPathInvalidName = "Router path parameter names must not contain '/' or ':'."
+        case routerPathDuplicateName = "Router path parameter names must be unique within a route."
+        case routerPathInvalidInterpolation = "Invalid router path interpolation. Use key:, decoding:, or converting:."
 
         var message: String { rawValue }
         var diagnosticID: MessageID { .init(domain: DiagnosticSeverity.domain, id: "\(self)") }
@@ -202,6 +207,7 @@ public struct RouterMacro {
     /// Metadata for `@Get`/`@Post`/`@On` typed controller methods.
     struct TypedHandlerMethodMetadata {
         let path: String
+        let pathParameterStrategies: [String: PathParameterStrategy]
         let method: String
         let middlewares: [ExprSyntax]
         let requestParameter: FunctionParameterMetadata
@@ -217,6 +223,25 @@ public struct RouterMacro {
         var responseType: String {
             explicitReturnType ?? "some Vapor.AsyncResponseEncodable"
         }
+    }
+
+    enum PathParameterStrategy {
+        case label
+        case decoding(type: String)
+        case converting(type: String)
+    }
+
+    struct RouterPathParseDiagnostic {
+        let node: Syntax
+        let message: RouteMacroDiagnostic
+    }
+
+    struct ParsedRouterPath {
+        let path: String
+        let parameterStrategies: [String: PathParameterStrategy]
+        let diagnostics: [RouterPathParseDiagnostic]
+
+        static let empty = Self(path: "", parameterStrategies: [:], diagnostics: [])
     }
 
     struct FunctionParameterMetadata {

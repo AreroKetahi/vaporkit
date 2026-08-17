@@ -133,10 +133,53 @@ func show(req: Request, @Path name: String) -> String {
 }
 ```
 
-Path parameter values must conform to `LosslessStringConvertible`, matching
-Vapor's `Request.parameters.require(_:as:)` API. Standard types such as
-`String`, `Int`, `Double`, and `Bool` are supported by the standard library.
-Vapor also makes `UUID` usable as a route parameter type.
+By default, the traditional `:id` syntax uses the type declared by ``Path`` and
+Vapor's `Request.parameters.require(_:as:)` conversion:
+
+```swift
+@Get("users/:id")
+func show(req: Request, @Path id: UUID) -> String {
+    id.uuidString
+}
+```
+
+Use ``RouterPath`` interpolation when the route declaration should explicitly
+name a parameter or select its parsing behavior. The route declaration and
+function signature remain separate: interpolation defines the captured segment,
+while ``Path`` chooses where that value is injected.
+
+Use `key:` to retain the existing conversion behavior:
+
+```swift
+@Get("users/\(key: "id")")
+func show(req: Request, @Path id: UUID) -> String {
+    id.uuidString
+}
+```
+
+Use `converting:` for an explicit `LosslessStringConvertible` conversion:
+
+```swift
+@Get("pages/\("page", converting: Int.self)")
+func page(req: Request, @Path page: Int) -> String {
+    String(page)
+}
+```
+
+Use `decoding:` for a `Decodable` value decoded from the URL-encoded path
+segment:
+
+```swift
+@Get("users/\("id", decoding: UUID.self)")
+func show(req: Request, @Path id: UUID) -> String {
+    id.uuidString
+}
+```
+
+Interpolation names must be static string literals, must not be empty or
+contain `/` or `:`, and must be unique within the route. Invalid conversion or
+decoding produces `422 Unprocessable Entity`. Traditional `:id` routes remain
+source compatible.
 
 ## Query Parameters
 

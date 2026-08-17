@@ -192,6 +192,32 @@ Use `@Path` for route parameters, `@Query` for query values, and
 `Request.auth`. `@Query`, `@ContentBody`, and `@Auth` support optional types
 and default values.
 
+Typed paths can also select path-parameter parsing with `RouterPath`
+interpolation. The path defines the label and parsing strategy, while `@Path`
+independently injects the captured value into the function:
+
+```swift
+@Get("users/\("id", decoding: UUID.self)")
+func find(req: Request, @Path id: UUID) async throws -> UserDTO {
+    try await loadUser(id, on: req.db)
+}
+
+@Get("pages/\("page", converting: Int.self)")
+func page(req: Request, @Path page: Int) -> String {
+    String(page)
+}
+
+@Get("articles/\(key: "slug")")
+func article(req: Request, @Path slug: String) -> String {
+    slug
+}
+```
+
+`key:` retains the existing conversion behavior, `decoding:` uses URL-encoded
+`Decodable` parsing, and `converting:` uses `LosslessStringConvertible`.
+Traditional paths such as `"users/:id"` remain supported. Interpolated names
+must be static, non-empty string literals without `/` or `:`.
+
 ## WebSocket Routes
 
 Use `#WebSocket` inside a router and declare events with `#OnText`, `#OnBinary`,
