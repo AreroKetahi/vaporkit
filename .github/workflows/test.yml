@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Cache Swift build artifacts
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .build
           key: ${{ runner.os }}-swift-6.3-${{ hashFiles('Package.resolved', 'Package.swift') }}
@@ -40,10 +40,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Cache Swift build artifacts
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .build
           key: ${{ runner.os }}-swift-6.3-${{ hashFiles('Package.resolved', 'Package.swift') }}
