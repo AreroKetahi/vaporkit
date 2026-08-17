@@ -6,7 +6,17 @@
 //
 
 #if canImport(Vapor)
+@_documentation(visibility: internal)
 @_exported import Vapor
 #else
 #error("VaporKit requires Vapor, but Vapor is unavailable on this target platform.")
+#endif
+
+@_exported import VaporKitOpenAPI
+
+#if canImport(ArgumentParser)
+@_documentation(visibility: internal)
+@_exported import ArgumentParser
+#else
+#error("VaporKit requires swift-argument-parser, but ArgumentParser is unavailable on this target platform.")
 #endif

@@ -198,7 +198,7 @@ changes.
 ### Mark a Written Handler Function
 
 - ``RouteHandler(_:method:)-xbrl``
-- ``RouteHandler(_:method:)-9lbrn``
+- ``RouteHandler(_:method:)-(RouterPath?,_)``
 
 ## See Also
 

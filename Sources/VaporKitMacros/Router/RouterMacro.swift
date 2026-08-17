@@ -25,6 +25,10 @@ public struct RouterMacro {
     static let webSocketMacroName = "WebSocket"
     static let webSocketDidUpgradeLabel = "didUpgrade"
     static let autoRegisterableAttributeName = "AutoRegisterable"
+    static let openAPIIgnoredAttributeName = "OpenAPIIgnored"
+    static let openAPIResponseAttributeName = "OpenAPIResponse"
+    static let openAPIRequestAttributeName = "OpenAPIRequest"
+    static let openAPIAttributeName = "OpenAPI"
     static let typedPathAttributeName = "Path"
     static let typedQueryAttributeName = "Query"
     static let typedContentAttributeName = "ContentBody"
@@ -92,6 +96,11 @@ public struct RouterMacro {
         case typedRouteRequiresInjectedParameterAttribute = "Typed handler parameters after Request must be marked with @Path, @Query, @ContentBody, or @Auth."
         case typedRoutePathRequiresLiteralName = "@Path requires a static string parameter name."
         case typedRouteQueryRequiresLiteralKey = "@Query requires a static string key."
+        case routerPathRequiresLiteralName = "Router path parameter names must be string literals."
+        case routerPathEmptyName = "Router path parameter names must not be empty."
+        case routerPathInvalidName = "Router path parameter names must not contain '/' or ':'."
+        case routerPathDuplicateName = "Router path parameter names must be unique within a route."
+        case routerPathInvalidInterpolation = "Invalid router path interpolation. Use key:, decoding:, or converting:."
 
         var message: String { rawValue }
         var diagnosticID: MessageID { .init(domain: DiagnosticSeverity.domain, id: "\(self)") }
@@ -119,6 +128,30 @@ public struct RouterMacro {
         var diagnosticID: MessageID {
             .init(domain: DiagnosticSeverity.domain, id: kind.rawValue)
         }
+    }
+
+    struct OpenAPIInferenceDiagnostic: DiagnosticMessage {
+        var message: String {
+            "Cannot infer this route's response schema. Add an explicit closure return type or @OpenAPIResponse."
+        }
+
+        var diagnosticID: MessageID {
+            .init(domain: DiagnosticSeverity.domain, id: "openAPIResponseTypeNotInferred")
+        }
+
+        var severity: SwiftDiagnostics.DiagnosticSeverity { .warning }
+    }
+
+    struct OpenAPIRequestInferenceDiagnostic: DiagnosticMessage {
+        var message: String {
+            "Cannot infer a single request body from multiple @ContentBody parameters. Add @OpenAPIRequest to select the documented body schema."
+        }
+
+        var diagnosticID: MessageID {
+            .init(domain: DiagnosticSeverity.domain, id: "openAPIRequestBodyNotInferred")
+        }
+
+        var severity: SwiftDiagnostics.DiagnosticSeverity { .warning }
     }
 
     /// Fix-its stay close to the diagnostics that use them so edits remain discoverable.
@@ -174,6 +207,7 @@ public struct RouterMacro {
     /// Metadata for `@Get`/`@Post`/`@On` typed controller methods.
     struct TypedHandlerMethodMetadata {
         let path: String
+        let pathParameterStrategies: [String: PathParameterStrategy]
         let method: String
         let middlewares: [ExprSyntax]
         let requestParameter: FunctionParameterMetadata
@@ -189,6 +223,25 @@ public struct RouterMacro {
         var responseType: String {
             explicitReturnType ?? "some Vapor.AsyncResponseEncodable"
         }
+    }
+
+    enum PathParameterStrategy {
+        case label
+        case decoding(type: String)
+        case converting(type: String)
+    }
+
+    struct RouterPathParseDiagnostic {
+        let node: Syntax
+        let message: RouteMacroDiagnostic
+    }
+
+    struct ParsedRouterPath {
+        let path: String
+        let parameterStrategies: [String: PathParameterStrategy]
+        let diagnostics: [RouterPathParseDiagnostic]
+
+        static let empty = Self(path: "", parameterStrategies: [:], diagnostics: [])
     }
 
     struct FunctionParameterMetadata {

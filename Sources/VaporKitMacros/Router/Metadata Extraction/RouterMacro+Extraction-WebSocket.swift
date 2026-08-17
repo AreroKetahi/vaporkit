@@ -53,7 +53,7 @@ extension RouterMacro {
         return WebSocketMetadata(
             path: joinedURL(
                 routerPrefix,
-                routeHandlerPath(from: expansion.arguments)
+                routeHandlerPath(from: expansion.arguments).path
             ),
             middlewares: middlewareExpressions(from: expansion.attributes),
             maxFrameSize: expansion.arguments.first(where: {

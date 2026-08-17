@@ -14,7 +14,9 @@ extension RouterMacro: MemberMacro {
         // 1. parse both route declaration styles into metadata
         // 2. validate route contracts against handler bodies
         // 3. generate boot registration + synthesized wrapper handlers
-        let routerPrefix = routerPrefix(from: node)
+        let parsedRouterPath = routerPath(from: node)
+        diagnoseRouterPath(parsedRouterPath?.diagnostics ?? [], in: context)
+        let routerPrefix = parsedRouterPath?.path
         let routerParameterCheckOverride = staticCheckOverride(
             named: disableParameterCheckAttributeName,
             in: declaration.attributes
@@ -27,7 +29,12 @@ extension RouterMacro: MemberMacro {
             handlerMethodMetadata(from: $0, routerPrefix: routerPrefix, context: context)
         }
         let typedHandlerMethods = declaration.memberBlock.members.compactMap {
-            typedHandlerMethodMetadata(from: $0, routerPrefix: routerPrefix, context: context)
+            typedHandlerMethodMetadata(
+                from: $0,
+                routerPrefix: routerPrefix,
+                routerPathParameterStrategies: parsedRouterPath?.parameterStrategies ?? [:],
+                context: context
+            )
         }
         let registeredRouters = declaration.memberBlock.members.compactMap {
             registeredRouterMetadata(from: $0, routerPrefix: routerPrefix)

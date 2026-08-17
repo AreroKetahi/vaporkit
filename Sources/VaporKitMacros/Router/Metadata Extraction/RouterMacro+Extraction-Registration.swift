@@ -3,13 +3,32 @@ import SwiftSyntax
 extension RouterMacro {
     /// Reads the router-level prefix once so every member can reuse the normalized base path.
     static func routerPrefix(from node: AttributeSyntax) -> String? {
+        routerPath(from: node)?.path
+    }
+
+    static func routerPath(
+        from node: AttributeSyntax
+    ) -> ParsedRouterPath? {
         guard case .argumentList(let arguments) = node.arguments,
             let firstArgument = arguments.first
         else {
             return nil
         }
 
-        return stringLiteralValue(from: firstArgument.expression)
+        let parsed = parsedRouterPath(from: firstArgument.expression)
+        guard let literal = firstArgument.expression.as(StringLiteralExprSyntax.self),
+              let firstSegment = literal.segments.first?.as(StringSegmentSyntax.self),
+              firstSegment.content.text.hasPrefix("/"),
+              !parsed.path.isEmpty
+        else {
+            return parsed
+        }
+
+        return .init(
+            path: "/\(parsed.path)",
+            parameterStrategies: parsed.parameterStrategies,
+            diagnostics: parsed.diagnostics
+        )
     }
 
     static func registeredRouterMetadata(

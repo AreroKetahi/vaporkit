@@ -36,13 +36,51 @@ struct RouteHandlerMacroTests {
                 func remove(req: Vapor.Request) -> Bool {
                     true
                 }
-            
+
                 func boot(routes: any Vapor.RoutesBuilder) throws {
                     routes.on(.GET, "api", "is-existed", use: existed)
                     routes.on(.DELETE, "api", "users", ":id", use: remove)
                 }
             }
-            
+
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private nonisolated let __macro_local_24VaporKitOpenAPI_accessorfMu_: VaporKit._OpenAPIRegisterAccessor = { outValue, type, _, _ in
+                guard unsafe type.load(as: Any.Type.self) == VaporKit._OpenAPIRouterDescriptor.self else {
+                    return false
+                }
+
+                unsafe outValue.initializeMemory(
+                    as: VaporKit._OpenAPIRouterDescriptor.self,
+                    to: VaporKit._OpenAPIRouterDescriptor(
+                        identifier: "MyRoute",
+                        path: "api",
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.existed", method: "GET", path: "is-existed", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: []),
+                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.remove", method: "DELETE", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        registeredRouters: []
+                    )
+                )
+                return true
+            }
+
+            #if objectFormat(MachO)
+            @section("__DATA_CONST,__swift5_vkoa")
+            #elseif objectFormat(ELF)
+            @section("swift5_vkoa")
+            #elseif objectFormat(COFF)
+            @section(".sw5vkoa")
+            #endif
+            @used
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private let __macro_local_22VaporKitOpenAPI_recordfMu_: VaporKit._OpenAPIRegisterRecord = (
+                0x766B_6F61,
+                1,
+                {
+                    unsafe __macro_local_24VaporKitOpenAPI_accessorfMu_($0, $1, $2, $3)
+                },
+                0,
+                0
+            )
+
             extension MyRoute: Vapor.RouteCollection {
             }
             """
@@ -70,7 +108,8 @@ struct RouteHandlerMacroTests {
                 }
             }
             """
-        } expansion: { """
+        } expansion: {
+            """
             struct MyRoute {
                 func index(req: Request) -> Bool {
                     true
@@ -78,13 +117,51 @@ struct RouteHandlerMacroTests {
                 func create(req: Vapor.Request) -> Bool {
                     true
                 }
-            
+
                 func boot(routes: any Vapor.RoutesBuilder) throws {
                     routes.on(.GET, "api", use: index)
                     routes.on(.POST, "api", use: create)
                 }
             }
-            
+
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private nonisolated let __macro_local_24VaporKitOpenAPI_accessorfMu_: VaporKit._OpenAPIRegisterAccessor = { outValue, type, _, _ in
+                guard unsafe type.load(as: Any.Type.self) == VaporKit._OpenAPIRouterDescriptor.self else {
+                    return false
+                }
+
+                unsafe outValue.initializeMemory(
+                    as: VaporKit._OpenAPIRouterDescriptor.self,
+                    to: VaporKit._OpenAPIRouterDescriptor(
+                        identifier: "MyRoute",
+                        path: "api",
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.index", method: "GET", path: "", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: []),
+                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.create", method: "POST", path: "", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        registeredRouters: []
+                    )
+                )
+                return true
+            }
+
+            #if objectFormat(MachO)
+            @section("__DATA_CONST,__swift5_vkoa")
+            #elseif objectFormat(ELF)
+            @section("swift5_vkoa")
+            #elseif objectFormat(COFF)
+            @section(".sw5vkoa")
+            #endif
+            @used
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private let __macro_local_22VaporKitOpenAPI_recordfMu_: VaporKit._OpenAPIRegisterRecord = (
+                0x766B_6F61,
+                1,
+                {
+                    unsafe __macro_local_24VaporKitOpenAPI_accessorfMu_($0, $1, $2, $3)
+                },
+                0,
+                0
+            )
+
             extension MyRoute: Vapor.RouteCollection {
             }
             """
@@ -144,12 +221,49 @@ struct RouteHandlerMacroTests {
                 func remove(req: Vapor.Request) -> Bool {
                     true
                 }
-            
+
                 func boot(routes: any Vapor.RoutesBuilder) throws {
                     routes.grouped(AuthMiddleware(), AuditMiddleware()).on(.DELETE, "api", "users", ":id", use: remove)
                 }
             }
-            
+
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private nonisolated let __macro_local_24VaporKitOpenAPI_accessorfMu_: VaporKit._OpenAPIRegisterAccessor = { outValue, type, _, _ in
+                guard unsafe type.load(as: Any.Type.self) == VaporKit._OpenAPIRouterDescriptor.self else {
+                    return false
+                }
+
+                unsafe outValue.initializeMemory(
+                    as: VaporKit._OpenAPIRouterDescriptor.self,
+                    to: VaporKit._OpenAPIRouterDescriptor(
+                        identifier: "MyRoute",
+                        path: "api",
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.remove", method: "DELETE", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        registeredRouters: []
+                    )
+                )
+                return true
+            }
+
+            #if objectFormat(MachO)
+            @section("__DATA_CONST,__swift5_vkoa")
+            #elseif objectFormat(ELF)
+            @section("swift5_vkoa")
+            #elseif objectFormat(COFF)
+            @section(".sw5vkoa")
+            #endif
+            @used
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private let __macro_local_22VaporKitOpenAPI_recordfMu_: VaporKit._OpenAPIRegisterRecord = (
+                0x766B_6F61,
+                1,
+                {
+                    unsafe __macro_local_24VaporKitOpenAPI_accessorfMu_($0, $1, $2, $3)
+                },
+                0,
+                0
+            )
+
             extension MyRoute: Vapor.RouteCollection {
             }
             """
@@ -213,12 +327,49 @@ struct RouteHandlerMacroTests {
                     let slug = try req.parameters.require("slug")
                     return slug
                 }
-            
+
                 func boot(routes: any Vapor.RoutesBuilder) throws {
                     routes.on(.GET, "users", ":id", use: show)
                 }
             }
-            
+
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private nonisolated let __macro_local_24VaporKitOpenAPI_accessorfMu_: VaporKit._OpenAPIRegisterAccessor = { outValue, type, _, _ in
+                guard unsafe type.load(as: Any.Type.self) == VaporKit._OpenAPIRouterDescriptor.self else {
+                    return false
+                }
+
+                unsafe outValue.initializeMemory(
+                    as: VaporKit._OpenAPIRouterDescriptor.self,
+                    to: VaporKit._OpenAPIRouterDescriptor(
+                        identifier: "MyRoute",
+                        path: "",
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.show", method: "GET", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        registeredRouters: []
+                    )
+                )
+                return true
+            }
+
+            #if objectFormat(MachO)
+            @section("__DATA_CONST,__swift5_vkoa")
+            #elseif objectFormat(ELF)
+            @section("swift5_vkoa")
+            #elseif objectFormat(COFF)
+            @section(".sw5vkoa")
+            #endif
+            @used
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private let __macro_local_22VaporKitOpenAPI_recordfMu_: VaporKit._OpenAPIRegisterRecord = (
+                0x766B_6F61,
+                1,
+                {
+                    unsafe __macro_local_24VaporKitOpenAPI_accessorfMu_($0, $1, $2, $3)
+                },
+                0,
+                0
+            )
+
             extension MyRoute: Vapor.RouteCollection {
             }
             """

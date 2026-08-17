@@ -18,5 +18,6 @@ struct VaporkitPlugin: CompilerPlugin {
         BypassMacro.self,
         EmptyMacro.self,
         EmptyExpressionMacro.self,
+        OpenAPISchemaMacro.self,
     ]
 }

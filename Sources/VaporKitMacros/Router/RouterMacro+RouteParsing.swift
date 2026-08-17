@@ -8,43 +8,45 @@ extension RouterMacro {
     static func routeSpec(
         from expansion: MacroExpansionDeclSyntax,
         macroName: RouteMacroName
-    ) -> (path: String, method: String) {
-        let path = routePath(from: expansion.arguments)
+    ) -> (path: String, method: String, pathParameterStrategies: [String: PathParameterStrategy], diagnostics: [RouterPathParseDiagnostic]) {
+        let parsedPath = routePath(from: expansion.arguments)
         let method = routeMethod(from: expansion.arguments, macroName: macroName)
-        return (path, method)
+        return (parsedPath.path, method, parsedPath.parameterStrategies, parsedPath.diagnostics)
     }
 
-    static func routeSpec(from attribute: AttributeSyntax) -> (path: String, method: String) {
+    static func routeSpec(from attribute: AttributeSyntax) -> (path: String, method: String, pathParameterStrategies: [String: PathParameterStrategy], diagnostics: [RouterPathParseDiagnostic]) {
         guard case let .argumentList(arguments) = attribute.arguments else {
-            return ("", "")
+            return ("", "", [:], [])
         }
 
-        let path = routeHandlerPath(from: arguments)
+        let parsedPath = routeHandlerPath(from: arguments)
         let method = routeHandlerMethod(from: arguments)
-        return (path, method)
+        return (parsedPath.path, method, parsedPath.parameterStrategies, parsedPath.diagnostics)
     }
 
     static func routeSpec(
         from attribute: AttributeSyntax,
         macroName: RouteMacroName
-    ) -> (path: String, method: String) {
+    ) -> (path: String, method: String, pathParameterStrategies: [String: PathParameterStrategy], diagnostics: [RouterPathParseDiagnostic]) {
         guard case let .argumentList(arguments) = attribute.arguments else {
-            return ("", macroName.defaultMethod ?? "")
+            return ("", macroName.defaultMethod ?? "", [:], [])
         }
 
-        let path = routePath(from: arguments)
+        let parsedPath = routePath(from: arguments)
         let method = routeMethod(from: arguments, macroName: macroName)
-        return (path, method)
+        return (parsedPath.path, method, parsedPath.parameterStrategies, parsedPath.diagnostics)
     }
 
-    static func routePath(from arguments: LabeledExprListSyntax) -> String {
+    static func routePath(
+        from arguments: LabeledExprListSyntax
+    ) -> ParsedRouterPath {
         guard let pathArgument = arguments.first(where: { $0.label == nil }) else {
-            return ""
+            return .empty
         }
 
         // Freestanding route macros treat the first unlabeled literal as the URL. Omitted or nil
         // paths intentionally normalize to the empty route so the router prefix can own the URL.
-        return stringLiteralValue(from: pathArgument.expression) ?? ""
+        return parsedRouterPath(from: pathArgument.expression)
     }
 
     static func routeMethod(
@@ -63,15 +65,32 @@ extension RouterMacro {
         return memberAccessBaseName(from: methodArgument.expression)?.uppercased() ?? ""
     }
 
-    static func routeHandlerPath(from arguments: LabeledExprListSyntax) -> String {
+    static func routeHandlerPath(from arguments: LabeledExprListSyntax) -> ParsedRouterPath {
         // `@RouteHandler` supports both `"users/:id"` and `"users", ":id"` styles, so every
         // unlabeled string argument is flattened into one canonical path.
-        let segments = arguments
-            .filter { $0.label == nil }
-            .compactMap { stringLiteralValue(from: $0.expression) }
-            .flatMap(pathSegments(from:))
+        var components: [String] = []
+        var strategies: [String: PathParameterStrategy] = [:]
+        var diagnostics: [RouterPathParseDiagnostic] = []
 
-        return segments.joined(separator: "/")
+        for argument in arguments where argument.label == nil {
+            let parsed = parsedRouterPath(from: argument.expression)
+            components.append(contentsOf: pathSegments(from: parsed.path))
+            diagnostics.append(contentsOf: parsed.diagnostics)
+            for (name, strategy) in parsed.parameterStrategies {
+                if strategies.updateValue(strategy, forKey: name) != nil {
+                    diagnostics.append(.init(
+                        node: Syntax(argument.expression),
+                        message: .routerPathDuplicateName
+                    ))
+                }
+            }
+        }
+
+        return .init(
+            path: components.joined(separator: "/"),
+            parameterStrategies: strategies,
+            diagnostics: diagnostics
+        )
     }
 
     static func routeHandlerMethod(from arguments: LabeledExprListSyntax) -> String {
@@ -110,5 +129,110 @@ extension RouterMacro {
         return literal.segments.compactMap { segment in
             segment.as(StringSegmentSyntax.self)?.content.text
         }.joined()
+    }
+
+    static func plainStringLiteralValue(from expression: ExprSyntax) -> String? {
+        guard let literal = expression.as(StringLiteralExprSyntax.self),
+              literal.segments.allSatisfy({ $0.is(StringSegmentSyntax.self) })
+        else {
+            return nil
+        }
+
+        return literal.segments.compactMap {
+            $0.as(StringSegmentSyntax.self)?.content.text
+        }.joined()
+    }
+
+    static func parsedRouterPath(
+        from expression: ExprSyntax
+    ) -> ParsedRouterPath {
+        guard let literal = expression.as(StringLiteralExprSyntax.self) else {
+            return .empty
+        }
+
+        var components: [String] = []
+        var strategies: [String: PathParameterStrategy] = [:]
+        var diagnostics: [RouterPathParseDiagnostic] = []
+
+        for segment in literal.segments {
+            if let stringSegment = segment.as(StringSegmentSyntax.self) {
+                components.append(contentsOf: pathSegments(from: stringSegment.content.text))
+                continue
+            }
+
+            guard let interpolation = segment.as(ExpressionSegmentSyntax.self),
+                  let first = interpolation.expressions.first
+            else {
+                diagnostics.append(.init(node: Syntax(segment), message: .routerPathInvalidInterpolation))
+                continue
+            }
+
+            guard let name = plainStringLiteralValue(from: first.expression) else {
+                diagnostics.append(.init(node: Syntax(first.expression), message: .routerPathRequiresLiteralName))
+                continue
+            }
+
+            guard !name.isEmpty else {
+                diagnostics.append(.init(node: Syntax(first.expression), message: .routerPathEmptyName))
+                continue
+            }
+
+            guard !name.contains("/"), !name.contains(":") else {
+                diagnostics.append(.init(node: Syntax(first.expression), message: .routerPathInvalidName))
+                continue
+            }
+
+            let strategy: PathParameterStrategy
+            if first.label?.text == "key", interpolation.expressions.count == 1 {
+                strategy = .label
+            } else if first.label == nil,
+                      interpolation.expressions.count == 2,
+                      let decoding = interpolation.expressions.first(where: { $0.label?.text == "decoding" }),
+                      let type = metatypeName(from: decoding.expression) {
+                strategy = .decoding(type: type)
+            } else if first.label == nil,
+                      interpolation.expressions.count == 2,
+                      let converting = interpolation.expressions.first(where: { $0.label?.text == "converting" }),
+                      let type = metatypeName(from: converting.expression) {
+                strategy = .converting(type: type)
+            } else {
+                diagnostics.append(.init(node: Syntax(interpolation), message: .routerPathInvalidInterpolation))
+                continue
+            }
+
+            if strategies[name] != nil {
+                diagnostics.append(.init(node: Syntax(interpolation), message: .routerPathDuplicateName))
+                continue
+            }
+
+            components.append(":\(name)")
+            strategies[name] = strategy
+        }
+
+        return .init(
+            path: components.joined(separator: "/"),
+            parameterStrategies: strategies,
+            diagnostics: diagnostics
+        )
+    }
+
+    static func metatypeName(from expression: ExprSyntax) -> String? {
+        guard let memberAccess = expression.as(MemberAccessExprSyntax.self),
+              memberAccess.declName.baseName.text == "self",
+              let base = memberAccess.base
+        else {
+            return nil
+        }
+
+        return base.trimmedDescription
+    }
+
+    static func diagnoseRouterPath(
+        _ diagnostics: [RouterPathParseDiagnostic],
+        in context: some MacroExpansionContext
+    ) {
+        for diagnostic in diagnostics {
+            context.diagnose(Diagnostic(node: diagnostic.node, message: diagnostic.message))
+        }
     }
 }

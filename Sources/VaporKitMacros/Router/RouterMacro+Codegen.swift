@@ -119,7 +119,11 @@ extension RouterMacro {
         let requestParameter = renderedParameter(metadata.requestParameter)
         let requestLocalName = metadata.requestParameter.localName
         let extractions = metadata.injectedParameters.map { parameter in
-            injectedParameterExtraction(parameter, requestLocalName: requestLocalName)
+            injectedParameterExtraction(
+                parameter,
+                pathParameterStrategies: metadata.pathParameterStrategies,
+                requestLocalName: requestLocalName
+            )
         }.joined(separator: "\n")
         let arguments = (
             [renderedArgument(metadata.requestParameter, value: requestLocalName)] +
@@ -139,6 +143,7 @@ extension RouterMacro {
 
     static func injectedParameterExtraction(
         _ parameter: InjectedParameterMetadata,
+        pathParameterStrategies: [String: PathParameterStrategy] = [:],
         requestLocalName: String
     ) -> String {
         let tryKeyword = renderedDecodingTry(for: parameter)
@@ -146,6 +151,18 @@ extension RouterMacro {
 
         switch parameter.source {
         case .path(let name):
+            if case .decoding(let type) = pathParameterStrategies[name] {
+                return """
+                let \(parameter.generatedName) = try \(requestLocalName).parameters.decode("\(name)", as: \(type).self)
+                """
+            }
+
+            if case .converting(let type) = pathParameterStrategies[name] {
+                return """
+                let \(parameter.generatedName) = try \(requestLocalName).parameters.require("\(name)", as: \(type).self)
+                """
+            }
+
             return """
             let \(parameter.generatedName) = try \(requestLocalName).parameters.require("\(name)", as: \(parameter.type.trimmedDescription).self)
             """

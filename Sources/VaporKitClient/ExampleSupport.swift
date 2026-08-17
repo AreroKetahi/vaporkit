@@ -1,4 +1,5 @@
 import Vapor
+import VaporKit
 
 struct AuthMiddleware: Middleware {
     func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
@@ -19,6 +20,7 @@ struct RateLimitMiddleware: Middleware {
     }
 }
 
+@OpenAPISchema
 struct UserDTO: Content {
     let id: UUID
     let email: String
