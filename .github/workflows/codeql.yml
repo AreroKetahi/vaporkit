@@ -26,14 +26,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Cache Swift build artifacts
-        uses: actions/cache@v6
-        with:
-          path: .build
-          key: ${{ runner.os }}-swift-6.3-codeql-${{ hashFiles('Package.resolved', 'Package.swift') }}
-          restore-keys: |
-            ${{ runner.os }}-swift-6.3-codeql-
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
