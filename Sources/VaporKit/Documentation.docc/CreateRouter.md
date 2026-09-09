@@ -81,6 +81,7 @@ name, such as `@Path id: UUID`.
 
 Use ``Query`` on typed handler parameters to decode request query values.
 Use ``ContentBody`` to decode request bodies with `Request.content.decode(_:)`.
+Use ``Cookie`` and ``Header`` to read parsed cookies and repeated header values.
 
 For the full typed handler syntax, see <doc:UsingParameterInFunction>.
 

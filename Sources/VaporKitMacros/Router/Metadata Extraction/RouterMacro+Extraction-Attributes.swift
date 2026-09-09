@@ -65,6 +65,42 @@ extension RouterMacro {
         }
     }
 
+    static func cookieAttribute(from attributes: AttributeListSyntax) -> AttributeSyntax? {
+        injectionAttribute(named: typedCookieAttributeName, from: attributes)
+    }
+
+    static func headerAttribute(from attributes: AttributeListSyntax) -> AttributeSyntax? {
+        injectionAttribute(named: typedHeaderAttributeName, from: attributes)
+    }
+
+    private static func injectionAttribute(
+        named name: String,
+        from attributes: AttributeListSyntax
+    ) -> AttributeSyntax? {
+        attributes.compactMap { $0.as(AttributeSyntax.self) }.first {
+            attributeName(of: $0) == name
+        }
+    }
+
+    static func namedValueSource(from attribute: AttributeSyntax) -> NamedValueSource? {
+        guard case .argumentList(let arguments) = attribute.arguments else {
+            return .all
+        }
+        guard let argument = arguments.first else {
+            return .all
+        }
+        guard let key = stringLiteralValue(from: argument.expression) else {
+            return nil
+        }
+
+        switch argument.label?.text {
+        case "key": return .raw(key: key)
+        case "decoding": return .decoding(key: key)
+        case "converting": return .converting(key: key)
+        default: return nil
+        }
+    }
+
     static func pathParameterName(
         from attribute: AttributeSyntax,
         defaultName: String

@@ -33,6 +33,8 @@ exported as OpenAPI without starting a Vapor application.
 - <doc:CreateRouter>
 - <doc:UsingParameterInFunction>
 - ``Router(_:)``
+- ``Cookie``
+- ``Header``
 - ``AutoRegisterable()``
 - ``Vapor/Application/autoRegisterRouters()``
 

@@ -138,6 +138,107 @@ public struct ContentBody<Value> where Value: Decodable {
     }
 }
 
+// MARK: - Cookie
+
+/// Marks a typed handler parameter as a value read from request cookies.
+///
+/// Use ``Cookie`` without an argument to inject every parsed request cookie as
+/// a `[String: String]` dictionary. Use `decoding:` to decode one cookie with
+/// `URLEncodedFormDecoder`, or `converting:` to initialize a
+/// `LosslessStringConvertible` value. Named cookie values are optional because
+/// the cookie may be absent or invalid. ``Cookie`` is only a marker;
+/// ``Router(_:)`` generates the request lookup.
+@propertyWrapper
+public struct Cookie<Value> {
+    /// The cookie value injected by the generated route handler.
+    public let wrappedValue: Value
+
+    /// Creates a marker for all parsed request cookies.
+    public init(wrappedValue: Value) where Value == [String: String] {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates a marker for one URL-form-decoded cookie.
+    ///
+    /// - Parameters:
+    ///   - wrappedValue: The decoded value, or `nil` when absent or invalid.
+    ///   - decoding: The cookie name.
+    public init<V>(
+        wrappedValue: Value,
+        decoding: String
+    ) where Value == V?, V: Decodable {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates a marker for one converted cookie.
+    ///
+    /// - Parameters:
+    ///   - wrappedValue: The converted value, or `nil` when absent or invalid.
+    ///   - converting: The cookie name.
+    public init<V>(
+        wrappedValue: Value,
+        converting: String
+    ) where Value == V?, V: LosslessStringConvertible {
+        self.wrappedValue = wrappedValue
+    }
+}
+
+// MARK: - Header
+
+/// Marks a typed handler parameter as values read from request headers.
+///
+/// Use ``Header`` without an argument to inject the complete `HTTPHeaders`
+/// value. Use `key:` to read every raw value for one case-insensitive header
+/// name. Vapor preserves repeated header fields, so named access returns an
+/// array and an absent header produces an empty array.
+///
+/// `decoding:` and `converting:` process each raw header value independently.
+/// Failed elements become `nil` without removing their position from the
+/// array. ``Header`` is only a marker; ``Router(_:)`` generates the lookup.
+@propertyWrapper
+public struct Header<Value> {
+    /// The header value or values injected by the generated route handler.
+    public let wrappedValue: Value
+
+    /// Creates a marker for the complete request header collection.
+    public init(wrappedValue: Value) where Value == HTTPHeaders {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates a marker for every raw value of one header name.
+    ///
+    /// - Parameters:
+    ///   - wrappedValue: The matching raw values in request order.
+    ///   - key: The case-insensitive header name.
+    public init(wrappedValue: Value, key: String) where Value == [String] {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates a marker that URL-form-decodes every value of one header name.
+    ///
+    /// - Parameters:
+    ///   - wrappedValue: One optional result for each matching raw value.
+    ///   - decoding: The case-insensitive header name.
+    public init<V>(
+        wrappedValue: Value,
+        decoding: String
+    ) where Value == [V?], V: Decodable {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates a marker that converts every value of one header name.
+    ///
+    /// - Parameters:
+    ///   - wrappedValue: One optional result for each matching raw value.
+    ///   - converting: The case-insensitive header name.
+    public init<V>(
+        wrappedValue: Value,
+        converting: String
+    ) where Value == [V?], V: LosslessStringConvertible {
+        self.wrappedValue = wrappedValue
+    }
+}
+
 // MARK: - Advanced Part
 
 /// Marks a typed handler function parameter as an authenticated Vapor user.

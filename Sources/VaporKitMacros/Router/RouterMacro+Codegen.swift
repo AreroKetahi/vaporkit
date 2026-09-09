@@ -179,6 +179,28 @@ extension RouterMacro {
             return """
             let \(parameter.generatedName) = \(tryKeyword) \(requestLocalName).content.decode(\(type).self)
             """
+        case .cookie(let source):
+            switch source {
+            case .all:
+                return "let \(parameter.generatedName) = \(requestLocalName).cookies.all.mapValues(\\.string)"
+            case .raw(let key):
+                return "let \(parameter.generatedName) = \(requestLocalName).cookies[\"\(key)\"]?.string"
+            case .decoding(let key):
+                return "let \(parameter.generatedName) = \(requestLocalName).cookies[\"\(key)\"].flatMap { try? Vapor.URLEncodedFormDecoder().decode(\(type).self, from: $0.string) }"
+            case .converting(let key):
+                return "let \(parameter.generatedName) = \(requestLocalName).cookies[\"\(key)\"].flatMap { \(type)($0.string) }"
+            }
+        case .header(let source):
+            switch source {
+            case .all:
+                return "let \(parameter.generatedName) = \(requestLocalName).headers"
+            case .raw(let key):
+                return "let \(parameter.generatedName) = \(requestLocalName).headers[\"\(key)\"]"
+            case .decoding(let key):
+                return "let \(parameter.generatedName) = \(requestLocalName).headers[\"\(key)\"].map { try? Vapor.URLEncodedFormDecoder().decode(\(headerElementType(of: parameter.type)).self, from: $0) }"
+            case .converting(let key):
+                return "let \(parameter.generatedName) = \(requestLocalName).headers[\"\(key)\"].map { \(headerElementType(of: parameter.type))($0) }"
+            }
         case .auth:
             if parameter.defaultValue != nil || isOptionalType(parameter.type) {
                 return """
@@ -222,6 +244,13 @@ extension RouterMacro {
 
     static func isOptionalType(_ type: TypeSyntax) -> Bool {
         optionalWrappedTypeDescription(of: type) != nil
+    }
+
+    static func headerElementType(of type: TypeSyntax) -> String {
+        guard let array = type.as(ArrayTypeSyntax.self) else {
+            return type.trimmedDescription
+        }
+        return optionalWrappedTypeDescription(of: array.element) ?? array.element.trimmedDescription
     }
 
     static func handlerDeclaration(for metadata: WebSocketMetadata) -> DeclSyntax {

@@ -167,6 +167,52 @@ extension RouterMacro {
                 continue
             }
 
+            if let cookieAttribute = cookieAttribute(from: parameter.attributes) {
+                guard let source = namedValueSource(from: cookieAttribute) else {
+                    context.diagnose(
+                        Diagnostic(
+                            node: Syntax(cookieAttribute),
+                            message: RouteMacroDiagnostic.typedRouteCookieRequiresLiteralKey
+                        )
+                    )
+                    return nil
+                }
+                injectedParameters.append(
+                    InjectedParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        type: parameter.type,
+                        defaultValue: defaultValue,
+                        generatedName: generatedName,
+                        source: .cookie(source)
+                    )
+                )
+                continue
+            }
+
+            if let headerAttribute = headerAttribute(from: parameter.attributes) {
+                guard let source = namedValueSource(from: headerAttribute) else {
+                    context.diagnose(
+                        Diagnostic(
+                            node: Syntax(headerAttribute),
+                            message: RouteMacroDiagnostic.typedRouteHeaderRequiresLiteralKey
+                        )
+                    )
+                    return nil
+                }
+                injectedParameters.append(
+                    InjectedParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        type: parameter.type,
+                        defaultValue: defaultValue,
+                        generatedName: generatedName,
+                        source: .header(source)
+                    )
+                )
+                continue
+            }
+
             if authAttribute(from: parameter.attributes) != nil {
                 injectedParameters.append(
                     InjectedParameterMetadata(

@@ -1,7 +1,7 @@
 # Using Parameters in Functions
 
-Write route handlers as regular functions and let VaporKit inject typed path,
-query, and content parameters.
+Write route handlers as regular functions and let VaporKit inject values from
+the request path, query, content, cookies, headers, and authentication state.
 
 ## Overview
 
@@ -288,6 +288,77 @@ let <generated-body> = try? req.content.decode(CreateProjectBody.self)
 return try await create(req: req, body: <generated-body> ?? .empty)
 ```
 
+## Cookie Parameters
+
+Use ``Cookie`` without an argument to access every parsed request cookie as
+string values:
+
+```swift
+@Get("preferences")
+func preferences(req: Request, @Cookie cookies: [String: String]) -> String {
+    cookies["theme"] ?? "system"
+}
+```
+
+Use `decoding:` for `Decodable` values and `converting:` for
+`LosslessStringConvertible` values:
+
+```swift
+@Get("preferences")
+func preferences(
+    req: Request,
+    @Cookie(decoding: "profile") profile: ProfileCookie?,
+    @Cookie(converting: "page") page: Int?
+) -> String {
+    "\(profile?.name ?? "anonymous"):\(page ?? 1)"
+}
+```
+
+The generated handler reads the named value from `req.cookies`. A missing
+cookie, decoding failure, or conversion failure produces `nil`. Vapor's parsed
+cookie collection contains one value per cookie name.
+
+## Header Parameters
+
+Use ``Header`` without an argument to access the complete `HTTPHeaders`
+collection, preserving repeated fields:
+
+```swift
+@Get("inspect")
+func inspect(req: Request, @Header headers: HTTPHeaders) -> Int {
+    headers.count
+}
+```
+
+Use `key:` to access every raw value for one case-insensitive header name:
+
+```swift
+@Get("inspect")
+func inspect(req: Request, @Header(key: "Accept") accept: [String]) -> [String] {
+    accept
+}
+```
+
+The generated handler uses `req.headers[key]`. Repeated fields remain separate,
+their request order is preserved, and a missing field produces an empty array.
+Values containing commas are not split further.
+
+Use `decoding:` or `converting:` to process every raw value independently:
+
+```swift
+@Get("inspect")
+func inspect(
+    req: Request,
+    @Header(decoding: "X-Metadata") metadata: [Metadata?],
+    @Header(converting: "X-Retry-Count") retryCounts: [Int?]
+) -> Int {
+    metadata.count + retryCounts.count
+}
+```
+
+Each input value produces one array element. A failed decoding or conversion
+becomes `nil` at the same position; other values are unaffected.
+
 ## Auth Parameters
 
 Use ``Auth`` for values that Vapor authentication has already attached to the
@@ -411,4 +482,6 @@ remove the repetitive parameter extraction code.
 - ``Path``
 - ``Query``
 - ``ContentBody``
+- ``Cookie``
+- ``Header``
 - ``Auth``
