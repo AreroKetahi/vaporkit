@@ -9,19 +9,30 @@ import ArgumentParser
 import Vapor
 
 struct _VaporBooter<App: VaporApplication>: AsyncParsableCommand {
-    @ArgumentParser.Argument(parsing: .captureForPassthrough)
+    @ArgumentParser::Argument(parsing: .captureForPassthrough)
     var arguments: [String] = []
+    
+    @ArgumentParser::Option(name: [.short, .long])
+    var environment: _VaporBooterEnvironment?
 
     static var configuration: CommandConfiguration {
-        CommandConfiguration(commandName: "server")
+        CommandConfiguration(commandName: "run")
     }
 
     func run() async throws {
-        var environment = try Environment.detect()
-        environment.commandInput.arguments = arguments
-        try LoggingSystem.bootstrap(from: &environment)
+        var env: Vapor::Environment = if let environment {
+            switch environment {
+            case .development: .development
+            case .production: .production
+            case .testing: .testing
+            }
+        } else {
+            try Environment.detect()
+        }
+        env.commandInput.arguments = arguments
+        try LoggingSystem.bootstrap(from: &env)
 
-        let application = try await Application.make(environment)
+        let application = try await Application.make(env)
         try await _runVaporBootSequence(
             configure: { try await App.manifest.configure(application) },
             willBoot: { try await App.manifest.willBoot(application) },
@@ -77,4 +88,27 @@ func _runVaporBootSequence(
     }
 
     if let primaryError { throw primaryError }
+}
+
+enum _VaporBooterEnvironment: String, CaseIterable, ExpressibleByArgument {
+    case production = "prod"
+    case development = "dev"
+    case testing = "test"
+    
+    static let allValueStrings: [String] = Self.allCases.map(\.rawValue)
+    
+    static let defaultCompletionKind: CompletionKind = .list(allValueStrings)
+    
+    init?(argument: String) {
+        switch argument {
+        case "prod", "production":
+            self = .production
+        case "dev", "development":
+            self = .development
+        case "test", "testing":
+            self = .testing
+        default:
+            return nil
+        }
+    }
 }

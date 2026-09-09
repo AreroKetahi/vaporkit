@@ -16,13 +16,13 @@ struct _VaporOpenAPIExtractor<App: VaporApplication>: AsyncParsableCommand {
         )
     }
 
-    @ArgumentParser.Option(name: .long)
+    @ArgumentParser::Option(name: .long)
     var title = "API"
 
-    @ArgumentParser.Option(name: .long)
+    @ArgumentParser::Option(name: .long)
     var version = "1.0.0"
 
-    @ArgumentParser.Option(name: [.customShort("o"), .long])
+    @ArgumentParser::Option(name: [.customShort("o"), .long])
     var output = "openapi.json"
 
     func run() async throws {
