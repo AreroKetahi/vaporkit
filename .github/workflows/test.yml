@@ -27,9 +27,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .build
-          key: ${{ runner.os }}-swift-6.3-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          key: ${{ runner.os }}-swift-6.3-test-${{ hashFiles('Package.resolved', 'Package.swift') }}
           restore-keys: |
-            ${{ runner.os }}-swift-6.3-
+            ${{ runner.os }}-swift-6.3-test-
 
       - name: Run tests
         run: swift test -Xswiftc -warnings-as-errors
@@ -46,9 +46,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .build
-          key: ${{ runner.os }}-swift-6.3-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          key: ${{ runner.os }}-swift-6.3-test-${{ hashFiles('Package.resolved', 'Package.swift') }}
           restore-keys: |
-            ${{ runner.os }}-swift-6.3-
+            ${{ runner.os }}-swift-6.3-test-
 
       - name: Run tests
         run: swift test -Xswiftc -warnings-as-errors
