@@ -1,204 +1,62 @@
-# Static Route Parameter Checking
+# Checking Route Parameters at Compile Time
 
-Use VaporKit's syntax-only analysis to catch route parameter drift while code
-is still compiling.
+Catch mismatches between route paths and parameter access during macro expansion.
 
 ## Overview
 
-Vapor route parameters are runtime values. A route such as `users/:id` only
-creates the `id` parameter after Vapor matches an incoming request. Without
-extra checks, a handler can accidentally read another name and fail later at
-runtime.
-
-VaporKit checks the route path and handler body during macro expansion. When a
-handler reads a literal parameter name that is not declared by the route path,
-the macro emits a diagnostic at the access site.
-
-```swift
-@Router("users")
-struct UserRoutes {
-    #Get(":id") { req in
-        try req.parameters.require("slug")
-    }
-}
-```
-
-The route declares `id`, but the handler requires `slug`, so VaporKit reports
-that the required path parameter is not declared in the route URL.
-
-## What Is Checked
-
-The checker recognizes direct access through the request identifier:
-
-```swift
-req.parameters.get("id")
-req.parameters.get("id", as: UUID.self)
-
-try req.parameters.require("id")
-try req.parameters.require("id", as: UUID.self)
-```
-
-The request identifier can be whatever the route closure or handler function
-uses:
+VaporKit diagnoses a literal parameter name that isn't declared by its route:
 
 ```swift
 #Get(":id") { request in
-    try request.parameters.require("id")
-}
-
-#Get(":id") {
-    try $0.parameters.require("id")
+    try request.parameters.require("slug") // "slug" isn't in the route
 }
 ```
 
-Nested direct calls are also checked:
+The check recognizes direct `request.parameters.get` and
+`request.parameters.require` calls, including shorthand closure arguments. It
+also checks ``Path`` parameters on method-based handlers.
 
-```swift
-#Get(":id") { req in
-    return try render(req.parameters.require("slug"))
-}
-```
+The analysis is intentionally syntax-only. It doesn't follow request aliases,
+helper functions, or dynamically computed parameter names. Dynamic names
+produce a warning because the compiler can't prove their value.
 
-This still reports `slug` because the access remains a direct
-`req.parameters.require(...)` call.
+### Declare Parent Parameters
 
-## Syntax-Only Boundaries
-
-The check is intentionally syntax-only. It does not run Swift type checking,
-resolve aliases, inspect helper functions, or infer whether another value is a
-`Request`.
-
-These forms are not treated as statically proven route-parameter access:
-
-```swift
-let parameters = req.parameters
-try parameters.require("id")
-
-let copiedRequest = req
-try copiedRequest.parameters.require("id")
-
-try readID(from: req)
-```
-
-Keeping the check syntax-only makes diagnostics predictable and keeps macro
-expansion lightweight. It catches the common route drift error without trying
-to become a full semantic analyzer.
-
-## Dynamic Parameter Names
-
-VaporKit warns when a route parameter name comes from a variable or expression:
-
-```swift
-#Get(":id") { req in
-    let key = "id"
-    return req.parameters.get(key)
-}
-```
-
-The value might be correct at runtime, but the macro cannot prove it from
-syntax alone. Prefer a string literal when the name is fixed:
-
-```swift
-#Get(":id") { req in
-    req.parameters.get("id")
-}
-```
-
-If the dynamic name is intentional, wrap just that expression or block in
-``Bypass(as:_:)``:
-
-```swift
-#Get(":id") { req in
-    let key = resolveParameterName()
-    return #Bypass { req.parameters.get(key) }
-}
-```
-
-## Forwarded Parameters
-
-When a child route collection is registered under a parent path, Swift macros
-cannot pass that parent path into the child router's expansion. Declare those
-inherited parameter names with ``ForwardParameters(_:)``.
+A child router's macro can't inspect the path of the parent that registers it.
+Declare inherited names in the child:
 
 ```swift
 @Router("users")
 struct UserRoutes {
     #ForwardParameters("tenantID")
 
-    #Get(":id") { req in
-        let tenantID = try req.parameters.require("tenantID") // Now "tenantID" is a valid parameter
-        let id = try req.parameters.require("id")
+    #Get(":id") { request in
+        let tenantID = try request.parameters.require("tenantID")
+        let id = try request.parameters.require("id")
         return "\(tenantID)/\(id)"
     }
 }
 ```
 
-## Downgrading Diagnostics
+### Adjust a Diagnostic
 
-Missing literal parameters are errors by default. Dynamic parameter names are
-warnings by default.
-
-Use ``DisableParameterCheck(as:)`` with `.warning` when a router or route should
-still show likely path mismatches without failing compilation. In warning mode,
-missing literal parameters become warnings and dynamic-name warnings are
-suppressed.
+Use ``DisableParameterCheck(as:)`` on a router or route to disable checks or
+downgrade missing literals to warnings. Use ``Bypass(as:_:)`` for the smallest
+dynamic expression that the checker should ignore:
 
 ```swift
-@DisableParameterCheck(as: .warning)
-@Router("legacy")
-struct LegacyRoutes {
-    #Get(":id") { req in
-        let key = resolveParameterName()
-        let dynamic = req.parameters.get(key) // Nothing here...
-        let slug = try req.parameters.require("slug") // This is a warning
-        return dynamic ?? slug
-    }
-}
+let key = resolveParameterName()
+let value = #Bypass { request.parameters.get(key) }
 ```
 
-Use the default `.error` mode to fully disable checking:
-
-```swift
-@DisableParameterCheck
-@Router("legacy")
-struct LegacyRoutes {
-    #Get(":id") { req in
-        try req.parameters.require("runtimeOnly") // No warning or error
-    }
-}
-```
-
-## Local Bypass
-
-Use ``Bypass(as:_:)`` when one expression or a local code block should be
-excluded from static analysis.
-
-```swift
-#Get(":id") { req in
-    let key = resolveParameterName()
-    return #Bypass {
-        let fallback = req.parameters.get("id")
-        req.parameters.get(key)
-            ?? fallback
-    }
-}
-```
-
-Use `#Bypass(as: .warning)` to keep a local missing-parameter diagnostic but
-downgrade it to a warning:
-
-```swift
-#Get(":id") { req in
-    return #Bypass(as: .warning) {
-        try req.parameters.require("slug")
-    }
-}
-```
+Prefer a literal or ``ForwardParameters(_:)`` whenever the parameter name is
+known. A bypass is appropriate only when the name is genuinely dynamic.
 
 ## Topics
 
-### Static Checking Controls
+### Checking Controls
 
 - ``ForwardParameters(_:)``
 - ``DisableParameterCheck(as:)``
 - ``Bypass(as:_:)``
+- ``StaticCheckSeverity``

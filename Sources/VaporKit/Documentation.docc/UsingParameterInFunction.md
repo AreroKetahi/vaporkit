@@ -1,483 +1,78 @@
 # Using Parameters in Functions
 
-Write route handlers as regular functions and let VaporKit inject values from
-the request path, query, content, cookies, headers, and authentication state.
+Decode request values directly into a route handler's parameters.
 
 ## Overview
 
-Vapor's native route parameters are read from `Request.parameters`:
-
-```swift
-#Get("users/:id") { req in
-    let id = try req.parameters.require("id", as: UUID.self)
-    return try await findUser(req: req, id: id)
-}
-```
-
-Typed handler functions keep the same Vapor route model but move path, query,
-and content parameters into the function signature. Attach an HTTP method macro
-to a function and mark injected path parameters with ``Path``:
+Attach a full-featured route macro to a method inside a ``Router(_:)`` type.
+The first parameter is the Vapor `Request`; mark every decoded parameter with
+the wrapper that identifies its source.
 
 ```swift
 @Router("users")
 struct UserRoutes {
-    @Get(":id")
-    func find(req: Request, @Path id: UUID) async throws -> UserDTO {
-        try await loadUser(req: req, id: id)
+    @Post(":id")
+    func update(
+        request: Request,
+        @Path id: UUID,
+        @Query("notify") notify: Bool = false,
+        @ContentBody body: UpdateUserRequest,
+        @Header(converting: "X-Retry-Count") retries: [Int?],
+        @Auth user: User
+    ) async throws -> UserDTO {
+        try await updateUser(id, with: body, by: user, notify: notify, on: request.db)
     }
 }
 ```
 
-During macro expansion, ``Router(_:)`` generates a private wrapper-like
-handler. The generated function receives only the request, reads the path
-parameter with Vapor's `parameters.require`, and calls your original function:
+VaporKit generates the request decoding and native Vapor route registration.
+It doesn't change the handler's return type or error behavior.
+
+For the decoding and failure behavior of every parameter annotation, see
+<doc:RouterInjection>.
+
+### Select a Parameter Source
+
+| Wrapper         | Source               | Behavior                                                              |
+| --------------- | -------------------- | --------------------------------------------------------------------- |
+| ``Path``        | `Request.parameters` | Converts a named path segment to a `LosslessStringConvertible` value. |
+| ``Query``       | `Request.query`      | Decodes the full query or a dotted/slashed key path.                  |
+| ``ContentBody`` | `Request.content`    | Decodes the request body.                                             |
+| ``Cookie``      | `Request.cookies`    | Reads all cookies or decodes one named cookie.                        |
+| ``Header``      | `Request.headers`    | Preserves repeated values for a named header.                         |
+| ``Auth``        | `Request.auth`       | Gets or requires an authenticated value.                              |
+
+Omit a ``Path`` name when it matches the Swift parameter name. Use optional
+parameters or default values when absence should not fail query, body, cookie,
+header, or authentication decoding.
+
+### Control Path Conversion
+
+The familiar `":id"` syntax uses the type declared by ``Path``. Use
+``RouterPath`` interpolation when the path itself needs to state how a segment
+is parsed:
 
 ```swift
-func <generated-find>(req: Vapor.Request) async throws -> UserDTO {
-    let <generated-id> = try req.parameters.require("id", as: UUID.self)
-    return try await find(req: req, id: <generated-id>)
-}
-```
-
-The registered route is still ordinary Vapor code:
-
-```swift
-routes.on(.GET, "users", ":id", use: <generated-find>)
-```
-
-## Declaring a Typed Handler
-
-A typed handler function must be declared inside a ``Router(_:)`` type and
-marked with one of the attached route macros:
-
-```swift
-@Router("projects")
-struct ProjectRoutes {
-    @Get(":id")
-    func show(req: Request, @Path id: UUID) throws -> ProjectDTO {
-        try loadProject(id, for: req)
-    }
-}
-```
-
-Use ``On(_:method:)`` when the route needs a method that does not have a
-dedicated helper:
-
-```swift
-@On(":id/archive", method: .PATCH)
-func archive(req: Request, @Path id: UUID) async throws -> HTTPStatus {
-    try await archiveProject(id, on: req.db)
-    return .accepted
-}
-```
-
-``Get(_:)``, ``Post(_:)``, ``Put(_:)``, and ``Delete(_:)`` use their matching
-HTTP methods automatically.
-
-## Request Parameter
-
-The first parameter must be `Request` or `Vapor.Request`. Its external label is
-preserved in the generated wrapper call:
-
-```swift
-@Get(":id")
-func show(request: Request, @Path id: UUID) -> String {
-    "\(request.method.rawValue):\(id)"
-}
-```
-
-Underscored request parameters are supported as well:
-
-```swift
-@Delete(":id")
-func delete(_ req: Vapor.Request, @Path id: UUID) throws -> HTTPStatus {
-    try deleteProject(id, on: req.db)
-    return .noContent
-}
-```
-
-The generated route handler still receives only that request parameter, so it
-matches Vapor's route handler registration API.
-
-## Path Parameters
-
-Every function parameter after the request parameter must be marked with
-``Path``:
-
-```swift
-@Get(":tenantID/users/:id")
-func show(
-    req: Request,
-    @Path tenantID: UUID,
-    @Path id: UUID
-) async throws -> UserDTO {
-    try await loadUser(tenantID: tenantID, id: id, on: req.db)
-}
-```
-
-The string passed to ``Path`` is the route parameter name without the leading
-colon. For a route segment `":id"`, write `@Path("id")`.
-
-The name is optional. When it is omitted, VaporKit uses the wrapped parameter's
-local name:
-
-```swift
-@Get("projects/:key")
-func show(req: Request, @Path of key: UUID) async throws -> ProjectDTO {
-    try await loadProject(key: key, on: req.db)
-}
-
-@Get("users/:name")
-func show(req: Request, @Path name: String) -> String {
-    name
-}
-```
-
-By default, the traditional `:id` syntax uses the type declared by ``Path`` and
-Vapor's `Request.parameters.require(_:as:)` conversion:
-
-```swift
-@Get("users/:id")
-func show(req: Request, @Path id: UUID) -> String {
-    id.uuidString
-}
-```
-
-Use ``RouterPath`` interpolation when the route declaration should explicitly
-name a parameter or select its parsing behavior. The route declaration and
-function signature remain separate: interpolation defines the captured segment,
-while ``Path`` chooses where that value is injected.
-
-Use `key:` to retain the existing conversion behavior:
-
-```swift
-@Get("users/\(key: "id")")
-func show(req: Request, @Path id: UUID) -> String {
-    id.uuidString
-}
-```
-
-Use `converting:` for an explicit `LosslessStringConvertible` conversion:
-
-```swift
-@Get("pages/\("page", converting: Int.self)")
-func page(req: Request, @Path page: Int) -> String {
+@Get("pages/\(\"page\", converting: Int.self)")
+func page(request: Request, @Path page: Int) -> String {
     String(page)
 }
 ```
 
-Use `decoding:` for a `Decodable` value decoded from the URL-encoded path
-segment:
-
-```swift
-@Get("users/\("id", decoding: UUID.self)")
-func show(req: Request, @Path id: UUID) -> String {
-    id.uuidString
-}
-```
-
-Interpolation names must be static string literals, must not be empty or
-contain `/` or `:`, and must be unique within the route. Invalid conversion or
-decoding produces `422 Unprocessable Entity`. Traditional `:id` routes remain
-source compatible.
-
-## Query Parameters
-
-Use ``Query`` for values decoded from `Request.query`:
-
-```swift
-struct SearchQuery: Decodable {
-    var term: String
-    var limit: Int
-}
-
-@Get("search")
-func search(req: Request, @Query input: SearchQuery) async throws -> [ProjectDTO] {
-    try await searchProjects(input, on: req.db)
-}
-```
-
-When no key is provided, the generated wrapper decodes the full query string:
-
-```swift
-let <generated-input> = try req.query.decode(SearchQuery.self)
-```
-
-Pass a key to decode one value with Vapor's query key-path API:
-
-```swift
-@Get("search")
-func search(
-    req: Request,
-    @Query("filter.name") name: String,
-    @Query("page/number") page: Int
-) -> String {
-    "\(name):\(page)"
-}
-```
-
-Dots and slashes both split the key into path components. The generated wrapper
-uses `req.query.get(_:at:)`:
-
-```swift
-let <generated-name> = try req.query.get(String.self, at: "filter", "name")
-let <generated-page> = try req.query.get(Int.self, at: "page", "number")
-```
-
-Optional query parameters are decoded with `try?`. Default values are applied
-when calling your handler:
-
-```swift
-@Get("search")
-func search(
-    req: Request,
-    @Query("filter.name") name: String?,
-    @Query page: Int = 1
-) -> String {
-    "\(name ?? "all"):\(page)"
-}
-```
-
-The generated wrapper keeps missing or invalid values from failing the route:
-
-```swift
-let <generated-name> = try? req.query.get(String.self, at: "filter", "name")
-let <generated-page> = try? req.query.get(Int.self, at: "page")
-return search(req: req, name: <generated-name>, page: <generated-page> ?? 1)
-```
-
-## Content Parameters
-
-Use ``ContentBody`` for values decoded from `Request.content`:
-
-```swift
-struct CreateProjectBody: Decodable {
-    var name: String
-}
-
-@Post("projects")
-func create(
-    req: Request,
-    @ContentBody body: CreateProjectBody
-) async throws -> ProjectDTO {
-    try await createProject(body, on: req.db)
-}
-```
-
-The generated wrapper decodes the body before calling your function:
-
-```swift
-let <generated-body> = try req.content.decode(CreateProjectBody.self)
-```
-
-``ContentBody`` also supports optional parameters and default values. Optional
-body parameters use `try?`; default values are applied in the generated call:
-
-```swift
-@Post("projects")
-func create(
-    req: Request,
-    @ContentBody body: CreateProjectBody = .empty
-) async throws -> ProjectDTO {
-    try await createProject(body, on: req.db)
-}
-```
-
-```swift
-let <generated-body> = try? req.content.decode(CreateProjectBody.self)
-return try await create(req: req, body: <generated-body> ?? .empty)
-```
-
-## Cookie Parameters
-
-Use ``Cookie`` without an argument to access every parsed request cookie as
-string values:
-
-```swift
-@Get("preferences")
-func preferences(req: Request, @Cookie cookies: [String: String]) -> String {
-    cookies["theme"] ?? "system"
-}
-```
-
-Use `decoding:` for `Decodable` values and `converting:` for
-`LosslessStringConvertible` values:
-
-```swift
-@Get("preferences")
-func preferences(
-    req: Request,
-    @Cookie(decoding: "profile") profile: ProfileCookie?,
-    @Cookie(converting: "page") page: Int?
-) -> String {
-    "\(profile?.name ?? "anonymous"):\(page ?? 1)"
-}
-```
-
-The generated handler reads the named value from `req.cookies`. A missing
-cookie, decoding failure, or conversion failure produces `nil`. Vapor's parsed
-cookie collection contains one value per cookie name.
-
-## Header Parameters
-
-Use ``Header`` without an argument to access the complete `HTTPHeaders`
-collection, preserving repeated fields:
-
-```swift
-@Get("inspect")
-func inspect(req: Request, @Header headers: HTTPHeaders) -> Int {
-    headers.count
-}
-```
-
-Use `key:` to access every raw value for one case-insensitive header name:
-
-```swift
-@Get("inspect")
-func inspect(req: Request, @Header(key: "Accept") accept: [String]) -> [String] {
-    accept
-}
-```
-
-The generated handler uses `req.headers[key]`. Repeated fields remain separate,
-their request order is preserved, and a missing field produces an empty array.
-Values containing commas are not split further.
-
-Use `decoding:` or `converting:` to process every raw value independently:
-
-```swift
-@Get("inspect")
-func inspect(
-    req: Request,
-    @Header(decoding: "X-Metadata") metadata: [Metadata?],
-    @Header(converting: "X-Retry-Count") retryCounts: [Int?]
-) -> Int {
-    metadata.count + retryCounts.count
-}
-```
-
-Each input value produces one array element. A failed decoding or conversion
-becomes `nil` at the same position; other values are unaffected.
-
-## Auth Parameters
-
-Use ``Auth`` for values that Vapor authentication has already attached to the
-request. Required auth parameters use `Request.auth.require(_:)`:
-
-```swift
-struct User: Authenticatable {
-    var id: UUID
-}
-
-@Get("profile")
-func profile(req: Request, @Auth user: User) async throws -> UserDTO {
-    try await loadProfile(for: user, on: req.db)
-}
-```
-
-```swift
-let <generated-user> = try req.auth.require(User.self)
-return try await profile(req: req, user: <generated-user>)
-```
-
-Optional auth parameters use `Request.auth.get(_:)` and pass `nil` when no user
-has been authenticated:
-
-```swift
-@Get("profile")
-func profile(req: Request, @Auth user: User?) -> UserDTO? {
-    user.map(UserDTO.init)
-}
-```
-
-```swift
-let <generated-user> = req.auth.get(User.self)
-return profile(req: req, user: <generated-user>)
-```
-
-Default values are applied when no authenticated value is present:
-
-```swift
-@Get("profile")
-func profile(req: Request, @Auth user: User = .guest) -> UserDTO {
-    UserDTO(user)
-}
-```
-
-Configure authentication with normal Vapor middleware or authenticators before
-the route runs. If the request is not authenticated as that type, Vapor throws
-the same error as `Request.auth.require(_:)` for required auth parameters.
-
-## Static Parameter Checking
-
-Typed path parameters participate in VaporKit's route parameter checks. If a
-``Path`` name is not declared by the route URL, the macro emits a diagnostic:
-
-```swift
-@Get(":id")
-func show(req: Request, @Path slug: String) -> String {
-    slug
-}
-```
-
-The route declares `id`, but the function asks for `slug`, so VaporKit reports
-that the required path parameter is not declared in the route URL.
-
-The same controls described in <doc:StaticRouteParameterChecking> apply:
-
-```swift
-#ForwardParameters("tenantID")
-
-@Get(":id")
-func show(
-    req: Request,
-    @Path tenantID: UUID,
-    @Path id: UUID
-) -> String {
-    "\(tenantID)/\(id)"
-}
-```
-
-Use ``ForwardParameters(_:)`` when a child router receives parameters from a
-parent route. Use ``DisableParameterCheck(as:)`` when a router or route needs
-to opt out of these checks.
-
-## Choosing a Handler Style
-
-Use freestanding route declarations when the handler is small or when the
-logic naturally belongs inline:
-
-```swift
-#Get("health") { _ in
-    HTTPStatus.ok
-}
-```
-
-Use typed handler functions when the route has named path parameters or when
-the handler body is easier to read as a normal method:
-
-```swift
-@Get("users/:id")
-func find(req: Request, @Path id: UUID) async throws -> UserDTO {
-    try await loadUser(id, on: req.db)
-}
-```
-
-Both forms generate Vapor-native route registrations. Typed handlers only
-remove the repetitive parameter extraction code.
+Use `key:` for Vapor's normal parameter conversion, `converting:` for
+`LosslessStringConvertible`, and `decoding:` for a URL-decoded `Decodable`
+value. Invalid explicit conversion or decoding returns `422 Unprocessable
+Entity`.
+
+### Check Path Names
+
+Path wrappers participate in the same syntax-only checks as closure handlers.
+See <doc:StaticRouteParameterChecking> for forwarded parameters, diagnostic
+severity, and local bypasses.
 
 ## Topics
 
-### Typed Route Handlers
-
-- ``Path``
-- ``Get(_:)``
-- ``Post(_:)``
-- ``Put(_:)``
-- ``Delete(_:)``
-- ``On(_:method:)``
-
-### Parameter Markers
+### Parameter Wrappers
 
 - ``Path``
 - ``Query``
@@ -485,3 +80,8 @@ remove the repetitive parameter extraction code.
 - ``Cookie``
 - ``Header``
 - ``Auth``
+
+## See Also
+
+- <doc:RouterInjection>
+- <doc:StaticRouteParameterChecking>

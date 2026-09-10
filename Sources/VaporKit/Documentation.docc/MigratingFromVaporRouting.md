@@ -1,97 +1,26 @@
-# Migrating Code From Vapor-style Routing
+# Migrating from Vapor Routing
 
-This article shows how to migrate existing Vapor route collections to
-VaporKit.
+Move an existing `RouteCollection` to VaporKit without changing route behavior.
 
-## Marking Code by Macros
+## Overview
 
-To get started, import VaporKit.
-
-Finds the `RouteCollection` you want to migrate, and add ``Router(_:)``
-to it.
+Migrate one collection at a time. Replace its conformance and `boot(routes:)`
+registration with ``Router(_:)`` and route annotations; callers can continue to
+register the resulting type as a normal Vapor `RouteCollection`.
 
 @Row {
     @Column {
         ```swift
-        // Legacy
-        
-        struct Controller: RouteCollection
-        ```
-    }
-    @Column {
-        ```swift
-        // VaporKit
-        @Router
-        struct Controller
-        ```
-    }
-}
-
-For all the handler functions, mark it with 
-``RouteHandler(_:method:)-xbrl``.
-Then based on its HTTP method, add method information.
-
-@Row {
-    @Column {
-        ```swift
-            // Legacy
-            
-            // routes.get("name", use: getName)
-            func getName(req: Request) async throws -> String
-        ```
-    }
-    @Column {
-        ```swift
-            // VaporKit
-            
-            @RouteHandler("name", method: .GET)
-            func getName(req: Request) async throws -> String
-        ```
-    }
-}
-
-## Adopting Routes
-
-Now, focusing on `routes()` in legacy code.
-
-- Find common routes, like
-
-  ```swift
-  routes.group("route") { ... }
-  ```
-
-  or
-
-  ```swift
-  routes.grouped("route")
-  ```
-
-  Add common route to `@Router`.
-
-  ```swift
-  @Router("route")
-  ```
-
-- For every register function like `on(_:use:)`, `get(_:use:)`,  
-  `post(_:use:)`, add routes to their `@RouteHandler`.
-
-  ```swift
-  @RouteHandler("name", ":id", method: .GET) // or "name/:id"
-  ```
-
-@Row {
-    @Column {
-        ```swift
-        // Legacy
-        
-        struct Controller: RouteCollection {
-            func boot(routes: any Vapor.RoutesBuilder) throws {
-                let grouped = routes.grouped("route")
-                grouped.get("name", ":id", use: getName)
+        // Vapor
+        struct UserController: RouteCollection {
+            func boot(routes: any RoutesBuilder) throws {
+                let users = routes.grouped("users")
+                users.get(":id", use: show)
             }
-            
-            func getName(req: Request) async throws -> String {
-                // ...
+
+            func show(request: Request) async throws -> UserDTO {
+                let id = try request.parameters.require("id", as: UUID.self)
+                return try await loadUser(id, on: request.db)
             }
         }
         ```
@@ -99,107 +28,46 @@ Now, focusing on `routes()` in legacy code.
     @Column {
         ```swift
         // VaporKit
-        
-        @Router("route")
-        struct Controller {
-            @RouteHandler("name/:id", method: .GET)
-            func getName(req: Request) async throws -> String {
-                // ...
+        @Router("users")
+        struct UserController {
+            @Get(":id")
+            func show(request: Request, @Path id: UUID) async throws -> UserDTO {
+                try await loadUser(id, on: request.db)
             }
         }
         ```
     }
 }
 
-## Migrating Socket
+### Translate Registrations
 
-Replace `routes.webSocket` to `#WebSocket`, and put it into structure 
-body.
+| Vapor                          | VaporKit                                                |
+| ------------------------------ | ------------------------------------------------------- |
+| `routes.grouped("users")`      | `@Router("users")`                                      |
+| `routes.get(..., use:)`        | `@Get` or `#Get`                                        |
+| `routes.on(method, ..., use:)` | ``On(_:method:)`` or ``On(_:method:action:)``           |
+| `routes.grouped(middleware)`   | ``Middleware(_:)``                                      |
+| `routes.register(collection:)` | ``Register(_:)``                                        |
+| `routes.webSocket(...)`        | ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)`` |
 
-Removing closure parameter in `didUpgrade`, and replace `ws.onText` to 
-`#OnText`, `ws.onBinary` to `#OnBinary`, `ws.onClose` to `#OnClose`.
+Use ``RouteHandler(_:method:)-xbrl`` when preserving an existing handler name
+is clearer than selecting a method-specific macro. See <doc:CreateRouter> for
+choosing between closure and method handlers.
 
-@Row {
-    @Column {
-        ```swift
-        // Legacy
-        
-        struct Controller: RouteCollection {
-            func boot(routes: any Vapor.RoutesBuilder) throws {
-                routes.webSocket("some", "route", maxFrameSize: .default) { request in
-                    // shouldUpgrade
-                } didUpgrade: { req, ws in
-                    ws.onText { ws, string in 
-                        // ...
-                    }
-                    
-                    ws.onBinary { ws, data in 
-                        // ...
-                    }
-                    
-                    ws.onClose {
-                        // ...
-                    }
-                }
-            }
-        }
-        ```
-    }
-    @Column {
-        ```swift
-        // VaporKit
-        
-        @Router
-        struct Controller {
-            #WebSocket("some", "route", maxFrameSize: .default) { req in
-                // shouldUpgrade
-            } didUpgrade: {
-                #OnText { ws, string in
-                    // ...
-                }
-            
-                #OnBinary { ws, data in
-                    // ...
-                }
-                
-                #OnClose {
-                    // ...
-                }
-            }
-        }
-        ```
-    }
-}
+### Preserve Parent Parameters
 
-## Manually Define Forward Parameters
+If a child collection reads path parameters declared by its parent, add
+``ForwardParameters(_:)`` to the child. The reason and severity controls are
+described in <doc:StaticRouteParameterChecking>.
 
-If you are migrating an child controller, defining parameter symbol is
-very important for Automatic Compile-time Parameter Checking System,
-find out more in <doc:CreateRouter#Find-Errors-at-Compile-time>.
-
-For instance, a super controller define symbol `name` and `id`.
-
-```swift
-@Router
-struct ChildrenController {
-    #ForwardParameters("name", "id")
-    // ...
-}
-```
-
-## Finally, Remove routes()
-
-After every steps done, remove legacy `routes()` from your declaration,
-rebuild project, nothing further needs to be aware, then you can see 
-changes.
+After all registrations have moved to annotations, remove `boot(routes:)` and
+rebuild. Keep explicit Vapor registration for routers that require constructor
+dependencies; automatic registration is optional.
 
 ## Topics
 
-### Mark a Written Handler Function
+### Migration APIs
 
+- ``Router(_:)``
 - ``RouteHandler(_:method:)-xbrl``
-- ``RouteHandler(_:method:)-(RouterPath?,_)``
-
-## See Also
-
-- <doc:CreateRouter>
+- ``ForwardParameters(_:)``
