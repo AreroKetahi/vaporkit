@@ -27,7 +27,7 @@ public macro Bypass<T, E: Error>(
 ///
 /// Attach `@AutoRegisterable` to a type that also uses ``Router(_:)`` when the
 /// router should be discovered at runtime by
-/// ``Vapor/Application/autoRegisterRouters()``. The annotated router must be
+/// `Application.autoRegisterRouters()`. The annotated router must be
 /// constructible with `init()` because auto-registration creates the route
 /// collection before calling Vapor's `register(collection:)` API.
 ///
@@ -41,7 +41,7 @@ public macro Bypass<T, E: Error>(
 /// }
 /// ```
 ///
-/// Call ``Vapor/Application/autoRegisterRouters()`` during application setup to
+/// Call `Application.autoRegisterRouters()` during application setup to
 /// register every discovered auto-registerable router.
 @attached(peer)
 public macro AutoRegisterable() = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")

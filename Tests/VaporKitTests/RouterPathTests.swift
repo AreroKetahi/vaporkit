@@ -1,6 +1,8 @@
 import Testing
 import VaporKit
 
+struct RequestMetadata: Decodable {}
+
 @Router("/router-path")
 struct RouterPathInterpolationFixture {
     @Get("/decoded/\("id", decoding: UUID.self)")
@@ -21,6 +23,20 @@ struct RouterPathInterpolationFixture {
     @RouteHandler("/raw/\(key: "value")", method: .GET)
     func raw(req: Request) throws -> String {
         try req.parameters.require("value")
+    }
+
+    @Get("/injected")
+    func injected(
+        req: Request,
+        @Cookie cookies: [String: String],
+        @Cookie(decoding: "profile") profile: RequestMetadata?,
+        @Cookie(converting: "page") page: Int?,
+        @Header headers: HTTPHeaders,
+        @Header(key: "X-Value") values: [String],
+        @Header(decoding: "X-Metadata") metadata: [RequestMetadata?],
+        @Header(converting: "X-Number") numbers: [Int?]
+    ) -> String {
+        "\(cookies.count + headers.count + values.count + metadata.count + numbers.count + (profile == nil ? 0 : 1) + (page ?? 0))"
     }
 }
 

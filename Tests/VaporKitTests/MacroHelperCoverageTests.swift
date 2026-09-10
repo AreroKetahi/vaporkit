@@ -192,6 +192,52 @@ struct MacroHelperCoverageTests {
         )
     }
 
+    @Test func cookieAndHeaderAttributesSelectTheirExtractionBehavior() throws {
+        let cookie = try #require(
+            RouterMacro.namedValueSource(from: AttributeSyntax(#"@Cookie(converting: "page")"#))
+        )
+        let header = try #require(
+            RouterMacro.namedValueSource(from: AttributeSyntax(#"@Header(decoding: "X-IDs")"#))
+        )
+
+        let cookieParameter = RouterMacro.InjectedParameterMetadata(
+            externalName: nil,
+            localName: "page",
+            type: TypeSyntax(stringLiteral: "Int?"),
+            defaultValue: nil,
+            generatedName: .identifier("page"),
+            source: .cookie(cookie)
+        )
+        let headerParameter = RouterMacro.InjectedParameterMetadata(
+            externalName: nil,
+            localName: "ids",
+            type: TypeSyntax(stringLiteral: "[UUID?]"),
+            defaultValue: nil,
+            generatedName: .identifier("ids"),
+            source: .header(header)
+        )
+
+        #expect(
+            RouterMacro.injectedParameterExtraction(cookieParameter, requestLocalName: "req")
+            == #"let page = req.cookies["page"].flatMap { Int($0.string) }"#
+        )
+        #expect(
+            RouterMacro.injectedParameterExtraction(headerParameter, requestLocalName: "req")
+            == #"let ids = req.headers["X-IDs"].map { try? Vapor.URLEncodedFormDecoder().decode(UUID.self, from: $0) }"#
+        )
+    }
+
+    @Test func cookieAndHeaderAttributesRequireLiteralKeys() {
+        #expect(
+            RouterMacro.namedValueSource(from: AttributeSyntax("@Cookie(decoding: key)"))
+            == nil
+        )
+        #expect(
+            RouterMacro.namedValueSource(from: AttributeSyntax("@Header(key: key)"))
+            == nil
+        )
+    }
+
     @Test func routerPathParserRejectsInvalidParameterNames() {
         let dynamic = RouterMacro.parsedRouterPath(
             from: ExprSyntax(#""/users/\(key: dynamicKey)""#)

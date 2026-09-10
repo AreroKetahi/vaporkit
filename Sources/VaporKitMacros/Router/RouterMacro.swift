@@ -33,6 +33,8 @@ public struct RouterMacro {
     static let typedQueryAttributeName = "Query"
     static let typedContentAttributeName = "ContentBody"
     static let typedAuthAttributeName = "Auth"
+    static let typedCookieAttributeName = "Cookie"
+    static let typedHeaderAttributeName = "Header"
 
     /// Every freestanding route declaration macro supported by `@Router`.
     enum RouteMacroName: String {
@@ -93,9 +95,11 @@ public struct RouterMacro {
         case webSocketCloseInvalidSignature = "#OnClose handlers must not declare parameters."
         case webSocketInvalidAdditionalClosureLabel = "#WebSocket only supports an additional trailing closure labeled didUpgrade:."
         case typedRouteRequiresRequestParameter = "Typed route functions must accept exactly one Request or Vapor.Request parameter."
-        case typedRouteRequiresInjectedParameterAttribute = "Typed handler parameters after Request must be marked with @Path, @Query, @ContentBody, or @Auth."
+        case typedRouteRequiresInjectedParameterAttribute = "Typed handler parameters after Request must be marked with @Path, @Query, @ContentBody, @Cookie, @Header, or @Auth."
         case typedRoutePathRequiresLiteralName = "@Path requires a static string parameter name."
         case typedRouteQueryRequiresLiteralKey = "@Query requires a static string key."
+        case typedRouteCookieRequiresLiteralKey = "@Cookie requires a static string key."
+        case typedRouteHeaderRequiresLiteralKey = "@Header requires a static string key."
         case routerPathRequiresLiteralName = "Router path parameter names must be string literals."
         case routerPathEmptyName = "Router path parameter names must not be empty."
         case routerPathInvalidName = "Router path parameter names must not contain '/' or ':'."
@@ -271,7 +275,16 @@ public struct RouterMacro {
         case path(name: String)
         case query(keyPath: [String]?)
         case content
+        case cookie(NamedValueSource)
+        case header(NamedValueSource)
         case auth
+    }
+
+    enum NamedValueSource {
+        case all
+        case raw(key: String)
+        case decoding(key: String)
+        case converting(key: String)
     }
 
     /// A child `RouteCollection` registration declared with `#Register(...)`.
