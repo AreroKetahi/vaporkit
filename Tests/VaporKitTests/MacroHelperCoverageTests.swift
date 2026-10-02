@@ -92,7 +92,7 @@ struct MacroHelperCoverageTests {
         let function = try FunctionDeclSyntax(
                 """
                 @Demo.Middleware(AuthMiddleware())
-                @Demo.RouteHandler("users", ":id", method: .GET)
+                @Demo.RouteHandler("users", ":id", method: .get)
                 func show(_ req: Vapor.Request) -> Bool {
                     true
                 }
@@ -109,7 +109,7 @@ struct MacroHelperCoverageTests {
         )
         #expect(RouterMacro.isSupportedRouteHandlerSignature(function.signature))
         #expect(RouterMacro.routeSpec(from: routeAttribute).path == "users/:id")
-        #expect(RouterMacro.routeSpec(from: routeAttribute).method == "GET")
+        #expect(RouterMacro.routeSpec(from: routeAttribute).method == "get")
     }
 
     @Test func routerHelpersRejectInvalidSignaturesAndMissingPrefixArguments() throws {
@@ -223,7 +223,7 @@ struct MacroHelperCoverageTests {
         )
         #expect(
             RouterMacro.injectedParameterExtraction(headerParameter, requestLocalName: "req")
-            == #"let ids = req.headers["X-IDs"].map { try? Vapor.URLEncodedFormDecoder().decode(UUID.self, from: $0) }"#
+            == #"let ids = req.headers[values: HTTPField.Name("X-IDs")!].map { try? Vapor.URLEncodedFormDecoder().decode(UUID.self, from: $0) }"#
         )
     }
 

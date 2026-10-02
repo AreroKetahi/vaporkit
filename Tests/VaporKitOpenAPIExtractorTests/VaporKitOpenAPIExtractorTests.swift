@@ -175,13 +175,13 @@ private struct DynamicOpenAPIFixture {
 
     private static func packageManifest(repositoryURL: URL) -> String {
         """
-        // swift-tools-version: 6.3
+        // swift-tools-version: 6.4
 
         import PackageDescription
 
         let package = Package(
             name: "OpenAPIFixture",
-            platforms: [.macOS(.v14)],
+            platforms: [.macOS("26.2")],
             products: [
                 .executable(name: "AppServer", targets: ["AppServer"])
             ],

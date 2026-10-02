@@ -16,12 +16,12 @@ struct RouteHandlerMacroTests {
             """
             @Router("api")
             struct MyRoute {
-                @RouteHandler("is-existed", method: .GET)
+                @RouteHandler("is-existed", method: .get)
                 func existed(req: Request) -> Bool {
                     true
                 }
             
-                @RouteHandler("users", ":id", method: .DELETE)
+                @RouteHandler("users", ":id", method: .delete)
                 func remove(req: Vapor.Request) -> Bool {
                     true
                 }
@@ -37,9 +37,9 @@ struct RouteHandlerMacroTests {
                     true
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "is-existed", use: existed)
-                    routes.on(.DELETE, "api", "users", ":id", use: remove)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "api", "is-existed", use: existed)
+                    routes.on(.delete, "api", "users", ":id", use: remove)
                 }
             }
 
@@ -54,8 +54,8 @@ struct RouteHandlerMacroTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.existed", method: "GET", path: "is-existed", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: []),
-                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.remove", method: "DELETE", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.existed", method: "get", path: "is-existed", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: []),
+                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.remove", method: "delete", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -97,12 +97,12 @@ struct RouteHandlerMacroTests {
             """
             @Router("api")
             struct MyRoute {
-                @RouteHandler(method: .GET)
+                @RouteHandler(method: .get)
                 func index(req: Request) -> Bool {
                     true
                 }
             
-                @RouteHandler(nil, method: .POST)
+                @RouteHandler(nil, method: .post)
                 func create(req: Vapor.Request) -> Bool {
                     true
                 }
@@ -118,9 +118,9 @@ struct RouteHandlerMacroTests {
                     true
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", use: index)
-                    routes.on(.POST, "api", use: create)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "api", use: index)
+                    routes.on(.post, "api", use: create)
                 }
             }
 
@@ -135,8 +135,8 @@ struct RouteHandlerMacroTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.index", method: "GET", path: "", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: []),
-                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.create", method: "POST", path: "", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.index", method: "get", path: "", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: []),
+                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.create", method: "post", path: "", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -178,7 +178,7 @@ struct RouteHandlerMacroTests {
             """
             @Router
             struct MyRoute {
-                @RouteHandler("bad", method: .GET)
+                @RouteHandler("bad", method: .get)
                 func invalid(id: String) -> Bool {
                     true
                 }
@@ -188,7 +188,7 @@ struct RouteHandlerMacroTests {
             """
             @Router
             struct MyRoute {
-                @RouteHandler("bad", method: .GET)
+                @RouteHandler("bad", method: .get)
                 ╰─ 🛑 @RouteHandler functions must accept exactly one parameter of type Request or Vapor.Request.
                 func invalid(id: String) -> Bool {
                     true
@@ -209,7 +209,7 @@ struct RouteHandlerMacroTests {
             @Router("api")
             struct MyRoute {
                 @Middleware(AuthMiddleware(), AuditMiddleware())
-                @RouteHandler("users", ":id", method: .DELETE)
+                @RouteHandler("users", ":id", method: .delete)
                 func remove(req: Vapor.Request) -> Bool {
                     true
                 }
@@ -222,8 +222,8 @@ struct RouteHandlerMacroTests {
                     true
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.grouped(AuthMiddleware(), AuditMiddleware()).on(.DELETE, "api", "users", ":id", use: remove)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.grouped(AuthMiddleware(), AuditMiddleware()).on(.delete, "api", "users", ":id", use: remove)
                 }
             }
 
@@ -238,7 +238,7 @@ struct RouteHandlerMacroTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.remove", method: "DELETE", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.remove", method: "delete", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -279,7 +279,7 @@ struct RouteHandlerMacroTests {
             """
             @Router
             struct MyRoute {
-                @RouteHandler("users/:id", method: .GET)
+                @RouteHandler("users/:id", method: .get)
                 func show(req: Request) throws -> String {
                     let slug = try req.parameters.require("slug")
                     return slug
@@ -290,7 +290,7 @@ struct RouteHandlerMacroTests {
             """
             @Router
             struct MyRoute {
-                @RouteHandler("users/:id", method: .GET)
+                @RouteHandler("users/:id", method: .get)
                 func show(req: Request) throws -> String {
                     let slug = try req.parameters.require("slug")
                                    ┬─────────────────────────────
@@ -313,7 +313,7 @@ struct RouteHandlerMacroTests {
             @Router
             struct MyRoute {
                 @DisableParameterCheck
-                @RouteHandler("users/:id", method: .GET)
+                @RouteHandler("users/:id", method: .get)
                 func show(req: Request) throws -> String {
                     let slug = try req.parameters.require("slug")
                     return slug
@@ -328,8 +328,8 @@ struct RouteHandlerMacroTests {
                     return slug
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "users", ":id", use: show)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "users", ":id", use: show)
                 }
             }
 
@@ -344,7 +344,7 @@ struct RouteHandlerMacroTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.show", method: "GET", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.show", method: "get", path: "users/:id", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )

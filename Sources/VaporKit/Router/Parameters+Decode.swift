@@ -1,4 +1,4 @@
-import Vapor
+import RoutingKit
 
 extension Parameters {
     /// Decodes a captured path parameter as a URL-encoded scalar value.
@@ -12,7 +12,7 @@ extension Parameters {
         } catch {
             logger.debug("The parameter \(value) could not be decoded as \(Value.self)")
             throw Abort(
-                .unprocessableEntity,
+                .unprocessableContent,
                 reason: "The parameter value could not be decoded as the required type"
             )
         }

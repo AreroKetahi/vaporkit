@@ -7,6 +7,7 @@
 
 import Vapor
 
+#if false // WebSocket is disabled due to Vapor 5 beta 2 current does not support it
 /// Declares a WebSocket route.
 ///
 /// Use `#WebSocket` inside an ``Router(_:)`` type to register a WebSocket endpoint.
@@ -63,3 +64,4 @@ public macro OnBinary(
 public macro OnClose(
     action: @escaping @Sendable () -> Void
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyExpressionMacro")
+#endif

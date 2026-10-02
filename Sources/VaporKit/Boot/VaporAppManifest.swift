@@ -6,6 +6,7 @@
 //
 
 import Vapor
+import Configuration
 
 /// An immutable description of a Vapor application's startup behavior.
 ///
@@ -17,7 +18,13 @@ public struct VaporAppManifest: Sendable {
     public let configurations: [any VaporAppConfiguration]
 
     /// The handlers that observe the application's runtime lifecycle.
-    public let lifecycleHandlers: [any VaporAppLifecycleHandler]
+    public let lifecycleHandlers: [any LifecycleHandler]
+    
+    public let configReaderManifest: VaporConfigReaderManifest
+    
+    public let serverConfiguration: ServerConfiguration
+    
+    public let serviceConfiguration: Application.ServiceConfiguration
 
     /// Creates a manifest from configuration and lifecycle stages.
     ///
@@ -27,35 +34,46 @@ public struct VaporAppManifest: Sendable {
     ///     boot and in reverse order during shutdown.
     public init(
         configurations: [any VaporAppConfiguration] = [],
-        lifecycleHandlers: [any VaporAppLifecycleHandler] = []
+        lifecycleHandlers: [any LifecycleHandler] = [],
+        configReader: VaporConfigReaderManifest = .default,
+        serverConfiguration: ServerConfiguration = ServerConfiguration(),
+        serviceConfiguration: Application.ServiceConfiguration = Application.ServiceConfiguration()
     ) {
         self.configurations = configurations
         self.lifecycleHandlers = lifecycleHandlers
+        self.configReaderManifest = configReader
+        self.serverConfiguration = serverConfiguration
+        self.serviceConfiguration = serviceConfiguration
     }
 
-    func configure(_ application: Application) async throws {
+    func _configure(_ application: Application) async throws {
         for configuration in configurations {
             try await configuration.configure(application)
         }
     }
 
-    func willBoot(_ application: Application) async throws {
+    func _installLifecycleHandlers(on application: Application) {
         for handler in lifecycleHandlers {
-            try await handler.willBoot(application)
+            application.addLifecycleHandler(handler)
         }
     }
+}
 
-    func didBoot(_ application: Application) async throws {
-        for handler in lifecycleHandlers {
-            try await handler.didBoot(application)
-        }
+public struct VaporConfigReaderManifest: Sendable {
+    public let configProviders: [any ConfigProvider]
+    public let accessReporter: (any AccessReporter)?
+    
+    public init(providers: [any ConfigProvider], accessReporter: (any AccessReporter)? = nil) {
+        self.configProviders = providers
+        self.accessReporter = accessReporter
     }
-
-    func shutdown(_ application: Application) async throws {
-        for handler in lifecycleHandlers.reversed() {
-            try await handler.shutdown(application)
-        }
-    }
+    
+    public static let `default` = VaporConfigReaderManifest(
+        providers: [
+            EnvironmentVariablesProvider(),
+        ],
+        accessReporter: nil
+    )
 }
 
 /// A stage that configures a Vapor application before its lifecycle begins.
@@ -74,27 +92,7 @@ public protocol VaporAppConfiguration: Sendable {
 ///
 /// Lifecycle handling begins after every ``VaporAppConfiguration`` completes
 /// successfully.
-public protocol VaporAppLifecycleHandler: Sendable {
-    /// Performs work immediately before Vapor boots the application.
-    ///
-    /// - Parameter application: The application that is about to boot.
-    func willBoot(_ application: Application) async throws
-
-    /// Performs work after Vapor boots the application.
-    ///
-    /// - Parameter application: The application that finished booting.
-    func didBoot(_ application: Application) async throws
-
-    /// Releases lifecycle resources before the application shuts down.
-    ///
-    /// Manifest shutdown callbacks run in reverse declaration order.
-    ///
-    /// - Parameter application: The application that is shutting down.
-    func shutdown(_ application: Application) async throws
-}
-
-public extension VaporAppLifecycleHandler {
-    func willBoot(_ application: Application) async throws {}
-    func didBoot(_ application: Application) async throws {}
-    func shutdown(_ application: Application) async throws {}
-}
+///
+/// - Important: In VaporKit 2.x, this type will represet to
+/// `Vapor.LifecycleHandler`.
+public typealias VaporAppLifecycleHandler = LifecycleHandler

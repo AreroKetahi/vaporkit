@@ -14,7 +14,7 @@ public struct AutoRegisterRoutesConfiguration: VaporAppConfiguration {
     ///
     /// - Parameter application: The application that receives the routes.
     public func configure(_ application: Application) async throws {
-        try application.autoRegisterRouters()
+        try await application.autoRegisterRouters()
     }
 
     /// The standard automatic route registration configuration.

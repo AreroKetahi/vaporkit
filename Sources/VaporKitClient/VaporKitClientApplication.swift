@@ -1,4 +1,5 @@
 import Vapor
+import Foundation
 import VaporKit
 
 @ValidatableModel
@@ -72,8 +73,8 @@ struct UserRoutes {
     }
 
     #Post("") { req -> UserDTO in
-        try CreateUserBody.validate(content: req)
-        let body = try req.content.decode(CreateUserBody.self)
+        try await CreateUserBody.validate(content: req)
+        let body = try await req.content.decode(CreateUserBody.self)
 
         return UserDTO(
             id: UUID(),
@@ -86,8 +87,8 @@ struct UserRoutes {
 
     #Put(":id") { req -> [String: String] in
         let id = try req.parameters.require("id", as: UUID.self)
-        try UpdateUserBody.validate(content: req)
-        let body = try req.content.decode(UpdateUserBody.self)
+        try await UpdateUserBody.validate(content: req)
+        let body = try await req.content.decode(UpdateUserBody.self)
 
         return [
             "id": id.uuidString,
@@ -97,7 +98,7 @@ struct UserRoutes {
     }
 
     @Middleware(AuthMiddleware(), AuditMiddleware())
-    @RouteHandler("exists", method: .GET)
+    @RouteHandler("exists", method: .get)
     func exists(req: Request) -> Bool {
         let username: String? = req.query["username"]
         return username != nil
@@ -108,8 +109,8 @@ struct UserRoutes {
 struct AdminRoutes {
     @OpenAPIResponse(body: [String: String].self)
     #Post("") { req in
-        try CreateAdminBody.validate(content: req)
-        let body = try req.content.decode(CreateAdminBody.self)
+        try await CreateAdminBody.validate(content: req)
+        let body = try await req.content.decode(CreateAdminBody.self)
 
         return [
             "role": body.role,
@@ -118,7 +119,7 @@ struct AdminRoutes {
     }
 
     @OpenAPIResponse(body: String.self)
-    #On(":id/reset-password", method: .PATCH) { req in
+    #On(":id/reset-password", method: .patch) { req in
         let id = try req.parameters.require("id")
         return "password reset requested for \(id)"
     }
@@ -141,7 +142,7 @@ struct PreviewRoutes {
         return "\(userID)-\(sessionID.uuidString)"
     }
 
-    @RouteHandler("health", method: .GET)
+    @RouteHandler("health", method: .get)
     func health(req: Vapor.Request) -> Bool {
         true
     }
@@ -152,7 +153,7 @@ struct PreviewRoutes {
         let slug = try #Bypass { request.parameters.require("slug") }
         return slug
     }
-
+    #if false // websocket is unavailable in vapor 5 beta 2
     #WebSocket("rooms", ":id", maxFrameSize: 4096) { req in
         ["X-Room": (try? req.parameters.require("id")) ?? "unknown"]
     } didUpgrade: {
@@ -168,6 +169,7 @@ struct PreviewRoutes {
             print("socket closed")
         }
     }
+    #endif
 }
 
 // MARK: - Static Parameter Check Scope Preview
@@ -249,7 +251,7 @@ struct TypedParameterController {
         @Query("username") name: String,
         @ContentBody body: MyBody? = MyBody(key: "some", value: "any"),
         @Auth user: User
-    ) -> some AsyncResponseEncodable {
+    ) -> some ResponseEncodable {
         "\(id)-\(name)"
     }
 
@@ -264,10 +266,10 @@ struct TypedParameterController {
 
 struct VaporKitClientConfiguration: VaporAppConfiguration {
     func configure(_ application: Application) async throws {
-        try application.register(collection: UserRoutes())
-        try application.register(collection: AdminRoutes())
-        try application.register(collection: PreviewRoutes())
-        try application.autoRegisterRouters()
+        try await application.register(collection: UserRoutes())
+        try await application.register(collection: AdminRoutes())
+        try await application.register(collection: PreviewRoutes())
+        try await application.autoRegisterRouters()
     }
 }
 

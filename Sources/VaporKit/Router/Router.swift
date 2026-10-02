@@ -6,6 +6,7 @@
 //
 
 import Vapor
+import HTTPTypes
 
 /// Defines a route collection from a nominal type.
 ///
@@ -33,15 +34,15 @@ public macro Router(_ url: RouterPath? = nil) = #externalMacro(module: "VaporKit
 ///   - method: The HTTP method used to register the route.
 ///   - action: The async route handler body.
 @freestanding(declaration)
-public macro On<T: AsyncResponseEncodable>(
+public macro On<T: ResponseEncodable>(
     _ url: StaticString? = nil,
-    method: HTTPMethod,
+    method: HTTPRequest.Method,
     action: (Request) async throws -> T
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
-/// Declares a `GET` route.
+/// Declares a `get` route.
 ///
-/// Use `#Get` inside an ``Router(_:)`` type to register a `GET` handler. The
+/// Use `#Get` inside an ``Router(_:)`` type to register a `get` handler. The
 /// trailing closure becomes the generated route handler and may use an explicit
 /// request parameter or `$0`.
 ///
@@ -49,14 +50,14 @@ public macro On<T: AsyncResponseEncodable>(
 ///   - url: The optional URL path relative to the enclosing router.
 ///   - action: The async route handler body.
 @freestanding(declaration)
-public macro Get<T: AsyncResponseEncodable>(
+public macro Get<T: ResponseEncodable>(
     _ url: StaticString? = nil,
     action: (Request) async throws -> T
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
-/// Declares a `POST` route.
+/// Declares a `Post` route.
 ///
-/// Use `#Post` inside an ``Router(_:)`` type to register a `POST` handler. The
+/// Use `#Post` inside an ``Router(_:)`` type to register a `Post` handler. The
 /// trailing closure becomes the generated route handler and may use an explicit
 /// request parameter or `$0`.
 ///
@@ -64,7 +65,7 @@ public macro Get<T: AsyncResponseEncodable>(
 ///   - url: The optional URL path relative to the enclosing router.
 ///   - action: The async route handler body.
 @freestanding(declaration)
-public macro Post<T: AsyncResponseEncodable>(
+public macro Post<T: ResponseEncodable>(
     _ url: StaticString? = nil,
     action: (Request) async throws -> T
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
@@ -79,7 +80,7 @@ public macro Post<T: AsyncResponseEncodable>(
 ///   - url: The optional URL path relative to the enclosing router.
 ///   - action: The async route handler body.
 @freestanding(declaration)
-public macro Put<T: AsyncResponseEncodable>(
+public macro Put<T: ResponseEncodable>(
     _ url: StaticString? = nil,
     action: (Request) async throws -> T
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
@@ -94,7 +95,7 @@ public macro Put<T: AsyncResponseEncodable>(
 ///   - url: The optional URL path relative to the enclosing router.
 ///   - action: The async route handler body.
 @freestanding(declaration)
-public macro Delete<T: AsyncResponseEncodable>(
+public macro Delete<T: ResponseEncodable>(
     _ url: StaticString? = nil,
     action: (Request) async throws -> T
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
@@ -116,7 +117,7 @@ public macro Delete<T: AsyncResponseEncodable>(
 /// `request.auth`, and then calls the annotated function.
 ///
 /// ```swift
-/// @On("reports/:id/rebuild", method: .PATCH)
+/// @On("reports/:id/rebuild", method: .patch)
 /// func rebuild(req: Request, @Path("id") id: UUID) async throws -> HTTPStatus {
 ///     try await rebuildReport(id, on: req.db)
 ///     return .accepted
@@ -129,10 +130,10 @@ public macro Delete<T: AsyncResponseEncodable>(
 @attached(peer)
 public macro On(
     _ url: RouterPath? = nil,
-    method: HTTPMethod
+    method: HTTPRequest.Method
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
-/// Marks a typed handler function as a `GET` route.
+/// Marks a typed handler function as a `get` route.
 ///
 /// Attach `@Get` to a function inside a ``Router(_:)`` type. The first
 /// function parameter must be `Request` or `Vapor.Request`; additional
@@ -153,9 +154,9 @@ public macro Get(
     _ url: RouterPath? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
-/// Marks a typed handler function as a `POST` route.
+/// Marks a typed handler function as a `Post` route.
 ///
-/// Use `@Post` when a typed handler function should be registered for `POST`.
+/// Use `@Post` when a typed handler function should be registered for `Post`.
 /// The generated route handler extracts any ``Path``, ``Query``,
 /// ``ContentBody``, and ``Auth`` parameters before calling the annotated
 /// function.
@@ -230,7 +231,7 @@ public macro Delete(
 @attached(peer)
 public macro RouteHandler(
     _ url: RouterPath? = nil,
-    method: HTTPMethod
+    method: HTTPRequest.Method
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
 /// Marks an existing function as a route handler with path segments.
@@ -245,7 +246,7 @@ public macro RouteHandler(
 @attached(peer)
 public macro RouteHandler(
     _ url: StaticString...,
-    method: HTTPMethod
+    method: HTTPRequest.Method
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 
 // MARK: - Middleware

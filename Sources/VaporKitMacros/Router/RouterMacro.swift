@@ -16,6 +16,7 @@ public struct RouterMacro {
     static let generatedHandlerName = "RouteHandler"
 
     static let routerAttributeName = "Router"
+    static let controllerAttributeName = "Controller"
     static let routeHandlerAttributeName = "RouteHandler"
     static let middlewareAttributeName = "Middleware"
     static let disableParameterCheckAttributeName = "DisableParameterCheck"
@@ -49,13 +50,13 @@ public struct RouterMacro {
             case .on:
                 return nil
             case .get:
-                return "GET"
+                return "get"
             case .post:
-                return "POST"
+                return "post"
             case .put:
-                return "PUT"
+                return "put"
             case .delete:
-                return "DELETE"
+                return "delete"
             }
         }
     }
@@ -85,6 +86,7 @@ public struct RouterMacro {
 
     /// Centralizes every user-facing diagnostic emitted while parsing or validating routes.
     enum RouteMacroDiagnostic: String, DiagnosticMessage {
+        case incompatibleController = "Vapor's @Controller and VaporKit's @Router cannot be used together. Choose one."
         case requiresTrailingClosure = "Route macros only support trailing closures."
         case doesNotAcceptClosureReference = "Route macros do not accept closure references as arguments. Use a trailing closure and call the handler explicitly."
         case routeHandlerRequiresSingleRequestParameter = "@RouteHandler functions must accept exactly one parameter of type Request or Vapor.Request."
@@ -134,6 +136,21 @@ public struct RouterMacro {
         }
     }
 
+    struct IgnoredVaporRouteMacroDiagnostic: DiagnosticMessage {
+        let vaporName: String
+        let vaporKitName: String
+
+        var message: String {
+            "Vapor's @\(vaporName) macro is ignored by @Router. Use VaporKit's @\(vaporKitName) instead."
+        }
+
+        var diagnosticID: MessageID {
+            .init(domain: DiagnosticSeverity.domain, id: "ignoredVaporRouteMacro.\(vaporName)")
+        }
+
+        var severity: SwiftDiagnostics.DiagnosticSeverity { .warning }
+    }
+
     struct OpenAPIInferenceDiagnostic: DiagnosticMessage {
         var message: String {
             "Cannot infer this route's response schema. Add an explicit closure return type or @OpenAPIResponse."
@@ -161,9 +178,20 @@ public struct RouterMacro {
     /// Fix-its stay close to the diagnostics that use them so edits remain discoverable.
     enum RouteMacroFixIt: String, FixItMessage {
         case moveClosureToTrailing = "Move closure to trailing closure"
+        case removeController = "Remove @Controller"
 
         var message: String { rawValue }
         var fixItID: MessageID { .init(domain: DiagnosticSeverity.domain, id: "\(self)") }
+    }
+
+    struct ReplaceVaporRouteMacroFixIt: FixItMessage {
+        let vaporName: String
+        let vaporKitName: String
+
+        var message: String { "Replace @\(vaporName) with @\(vaporKitName)" }
+        var fixItID: MessageID {
+            .init(domain: DiagnosticSeverity.domain, id: "replaceVaporRouteMacro.\(vaporName)")
+        }
     }
 
     /// Normalized representation of a freestanding route declaration like `#Get("users") { ... }`.
@@ -183,7 +211,7 @@ public struct RouterMacro {
         }
 
         var responseType: String {
-            explicitReturnType ?? "some Vapor.AsyncResponseEncodable"
+            explicitReturnType ?? "some Vapor.ResponseEncodable"
         }
 
         /// When the source closure used `$0`, generation rewrites it to the synthesized request name.
@@ -225,7 +253,7 @@ public struct RouterMacro {
         let isThrowing: Bool
 
         var responseType: String {
-            explicitReturnType ?? "some Vapor.AsyncResponseEncodable"
+            explicitReturnType ?? "some Vapor.ResponseEncodable"
         }
     }
 

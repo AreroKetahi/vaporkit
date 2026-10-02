@@ -1,5 +1,8 @@
 import Testing
+import Foundation
 import VaporKit
+import HTTPTypes
+import RoutingKit
 
 struct RequestMetadata: Decodable {}
 
@@ -20,7 +23,7 @@ struct RouterPathInterpolationFixture {
         slug
     }
 
-    @RouteHandler("/raw/\(key: "value")", method: .GET)
+    @RouteHandler("/raw/\(key: "value")", method: .get)
     func raw(req: Request) throws -> String {
         try req.parameters.require("value")
     }
@@ -31,7 +34,7 @@ struct RouterPathInterpolationFixture {
         @Cookie cookies: [String: String],
         @Cookie(decoding: "profile") profile: RequestMetadata?,
         @Cookie(converting: "page") page: Int?,
-        @Header headers: HTTPHeaders,
+        @Header headers: HTTPFields,
         @Header(key: "X-Value") values: [String],
         @Header(decoding: "X-Metadata") metadata: [RequestMetadata?],
         @Header(converting: "X-Number") numbers: [Int?]

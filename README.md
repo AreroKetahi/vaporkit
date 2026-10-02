@@ -12,7 +12,7 @@ capabilities you use.
 
 ## Requirements
 
-- Swift 6.3 or newer
+- Swift 6.4 or newer
 - Vapor 4.121.0 or newer
 - macOS 14 or newer, or Linux
 

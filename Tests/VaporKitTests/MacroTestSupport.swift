@@ -32,4 +32,8 @@ let testMacros: [String: Macro.Type] = [
     "Attribute": EmptyMacro.self,
     "Relationship": EmptyMacro.self,
 ]
+
+let diagnosticTestMacros = testMacros.filter {
+    !["Get", "Post", "Put", "Delete"].contains($0.key)
+}
 #endif

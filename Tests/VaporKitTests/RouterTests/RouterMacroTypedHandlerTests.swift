@@ -24,7 +24,7 @@ struct RouterMacroTypedHandlerTests {
                     try await loadUser(req: req, id: id)
                 }
             
-                @On("users/:id", method: .DELETE)
+                @On("users/:id", method: .delete)
                 func remove(_ req: Vapor.Request, @Path("id") id: String) -> Bool {
                     true
                 }
@@ -40,9 +40,9 @@ struct RouterMacroTypedHandlerTests {
                     true
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "users", ":id", use: __macro_local_4findfMu_)
-                    routes.on(.DELETE, "api", "users", ":id", use: __macro_local_6removefMu_)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "api", "users", ":id", use: __macro_local_4findfMu_)
+                    routes.on(.delete, "api", "users", ":id", use: __macro_local_6removefMu_)
                 }
 
                 func __macro_local_4findfMu_(req: Vapor.Request) async throws -> UserDTO {
@@ -67,8 +67,8 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.find", method: "GET", path: "users/:id", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: UserDTO.self)], operationID: nil, summary: nil, description: nil, tags: []),
-                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.remove", method: "DELETE", path: "users/:id", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (String).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.find", method: "get", path: "users/:id", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: UserDTO.self)], operationID: nil, summary: nil, description: nil, tags: []),
+                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.remove", method: "delete", path: "users/:id", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (String).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: Bool.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -131,9 +131,9 @@ struct RouterMacroTypedHandlerTests {
                     name
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "projects", ":key", use: __macro_local_4showfMu_)
-                    routes.on(.GET, "api", "users", ":name", use: __macro_local_4findfMu_)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "api", "projects", ":key", use: __macro_local_4showfMu_)
+                    routes.on(.get, "api", "users", ":name", use: __macro_local_4findfMu_)
                 }
 
                 func __macro_local_4showfMu_(req: Vapor.Request) async throws -> ProjectDTO {
@@ -158,8 +158,8 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.show", method: "GET", path: "projects/:key", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "key", location: "path", schema: (UUID).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: ProjectDTO.self)], operationID: nil, summary: nil, description: nil, tags: []),
-                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.find", method: "GET", path: "users/:name", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "name", location: "path", schema: (String).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.show", method: "get", path: "projects/:key", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "key", location: "path", schema: (UUID).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: ProjectDTO.self)], operationID: nil, summary: nil, description: nil, tags: []),
+                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.find", method: "get", path: "users/:name", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "name", location: "path", schema: (String).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -226,8 +226,8 @@ struct RouterMacroTypedHandlerTests {
                     try await searchProjects(id: id, input: input, name: name, page: page, on: req.db)
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "projects", ":id", "search", use: __macro_local_6searchfMu_)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "api", "projects", ":id", "search", use: __macro_local_6searchfMu_)
                 }
 
                 func __macro_local_6searchfMu_(req: Vapor.Request) async throws -> [ProjectDTO] {
@@ -250,7 +250,7 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.search", method: "GET", path: "projects/:id/search", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "input", location: "query", schema: (SearchQuery).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "filter.name", location: "query", schema: (String).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "page.number", location: "query", schema: (Int).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: [ProjectDTO].self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.search", method: "get", path: "projects/:id/search", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "input", location: "query", schema: (SearchQuery).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "filter.name", location: "query", schema: (String).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "page.number", location: "query", schema: (Int).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: [ProjectDTO].self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -315,14 +315,14 @@ struct RouterMacroTypedHandlerTests {
                     try await updateProject(id: id, reason: reason, body: body, on: req.db)
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.POST, "api", "projects", ":id", use: __macro_local_6updatefMu_)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.post, "api", "projects", ":id", use: __macro_local_6updatefMu_)
                 }
 
                 func __macro_local_6updatefMu_(req: Vapor.Request) async throws -> ProjectDTO {
                     let __macro_local_2idfMu_ = try req.parameters.require("id", as: UUID.self)
                     let __macro_local_6reasonfMu_ = try req.query.get(String.self, at: "audit", "reason")
-                    let __macro_local_4bodyfMu_ = try req.content.decode(UpdateProjectBody.self)
+                    let __macro_local_4bodyfMu_ = try await req.content.decode(UpdateProjectBody.self)
                     return try await update(req: req, id: __macro_local_2idfMu_, reason: __macro_local_6reasonfMu_, body: __macro_local_4bodyfMu_)
                 }
             }
@@ -338,7 +338,7 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.update", method: "POST", path: "projects/:id", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "audit.reason", location: "query", schema: (String).self, required: true)], requestBody: VaporKit._OpenAPIRequestBodyDescriptor(body: (UpdateProjectBody).self, required: true), responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: ProjectDTO.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.update", method: "post", path: "projects/:id", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "audit.reason", location: "query", schema: (String).self, required: true)], requestBody: VaporKit._OpenAPIRequestBodyDescriptor(body: (UpdateProjectBody).self, required: true), responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: ProjectDTO.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -393,8 +393,8 @@ struct RouterMacroTypedHandlerTests {
                     try await loadProfile(for: user, on: req.db)
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "profile", use: __macro_local_7profilefMu_)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "api", "profile", use: __macro_local_7profilefMu_)
                 }
 
                 func __macro_local_7profilefMu_(req: Vapor.Request) async throws -> UserDTO {
@@ -414,7 +414,7 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.profile", method: "GET", path: "profile", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: UserDTO.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.profile", method: "get", path: "profile", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: UserDTO.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -477,9 +477,9 @@ struct RouterMacroTypedHandlerTests {
                     user.name
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "api", "profile", use: __macro_local_7profilefMu_)
-                    routes.on(.GET, "api", "profile", "default", use: __macro_local_9defaultedfMu_)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "api", "profile", use: __macro_local_7profilefMu_)
+                    routes.on(.get, "api", "profile", "default", use: __macro_local_9defaultedfMu_)
                 }
 
                 func __macro_local_7profilefMu_(req: Vapor.Request) async throws -> String {
@@ -504,8 +504,8 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.profile", method: "GET", path: "profile", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: []),
-                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.defaulted", method: "GET", path: "profile/default", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.profile", method: "get", path: "profile", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: []),
+                            VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.defaulted", method: "get", path: "profile/default", parameters: [], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: String.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -572,15 +572,15 @@ struct RouterMacroTypedHandlerTests {
                     try await update(id: id, user: user, reason: reason, body: body, on: req.db)
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.POST, "api", "users", ":id", "profile", use: __macro_local_13updateProfilefMu_)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.post, "api", "users", ":id", "profile", use: __macro_local_13updateProfilefMu_)
                 }
 
                 func __macro_local_13updateProfilefMu_(_ req: Vapor.Request) async throws -> UserDTO {
                     let __macro_local_2idfMu_ = try req.parameters.require("id", as: UUID.self)
                     let __macro_local_4userfMu_ = req.auth.get(User.self)
                     let __macro_local_6reasonfMu_ = try? req.query.get(String.self, at: "audit", "reason")
-                    let __macro_local_4bodyfMu_ = try req.content.decode(UpdateProfileBody.self)
+                    let __macro_local_4bodyfMu_ = try await req.content.decode(UpdateProfileBody.self)
                     return try await updateProfile(req, id: __macro_local_2idfMu_, user: __macro_local_4userfMu_, reason: __macro_local_6reasonfMu_ ?? "manual", body: __macro_local_4bodyfMu_)
                 }
             }
@@ -596,7 +596,7 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.updateProfile", method: "POST", path: "users/:id/profile", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "audit.reason", location: "query", schema: (String).self, required: false)], requestBody: VaporKit._OpenAPIRequestBodyDescriptor(body: (UpdateProfileBody).self, required: true), responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: UserDTO.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.updateProfile", method: "post", path: "users/:id/profile", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "audit.reason", location: "query", schema: (String).self, required: false)], requestBody: VaporKit._OpenAPIRequestBodyDescriptor(body: (UpdateProfileBody).self, required: true), responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: UserDTO.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -686,8 +686,8 @@ struct RouterMacroTypedHandlerTests {
                     try await updateProject(id: id, name: name, page: page, mode: mode, body: body, fallback: fallback, on: req.db)
                 }
 
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.POST, "api", "projects", ":id", "defaults", use: __macro_local_6updatefMu_)
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.post, "api", "projects", ":id", "defaults", use: __macro_local_6updatefMu_)
                 }
 
                 func __macro_local_6updatefMu_(req: Vapor.Request) async throws -> ProjectDTO {
@@ -695,8 +695,8 @@ struct RouterMacroTypedHandlerTests {
                     let __macro_local_4namefMu_ = try? req.query.get(String.self, at: "filter", "name")
                     let __macro_local_4pagefMu_ = try? req.query.get(Int.self, at: "page")
                     let __macro_local_4modefMu_ = try? req.query.get(String?.self, at: "mode")
-                    let __macro_local_4bodyfMu_ = try? req.content.decode(UpdateProjectBody.self)
-                    let __macro_local_8fallbackfMu_ = try? req.content.decode(UpdateProjectBody.self)
+                    let __macro_local_4bodyfMu_ = try? await req.content.decode(UpdateProjectBody.self)
+                    let __macro_local_8fallbackfMu_ = try? await req.content.decode(UpdateProjectBody.self)
                     return try await update(req: req, id: __macro_local_2idfMu_, name: __macro_local_4namefMu_, page: __macro_local_4pagefMu_ ?? 1, mode: __macro_local_4modefMu_ ?? "full", body: __macro_local_4bodyfMu_, fallback: __macro_local_8fallbackfMu_ ?? .empty)
                 }
             }
@@ -712,7 +712,7 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.update", method: "POST", path: "projects/:id/defaults", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "filter.name", location: "query", schema: (String?).self, required: false), VaporKit._OpenAPIParameterDescriptor(name: "page", location: "query", schema: (Int).self, required: false), VaporKit._OpenAPIParameterDescriptor(name: "mode", location: "query", schema: (String?).self, required: false)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: ProjectDTO.self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.update", method: "post", path: "projects/:id/defaults", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "filter.name", location: "query", schema: (String?).self, required: false), VaporKit._OpenAPIParameterDescriptor(name: "page", location: "query", schema: (Int).self, required: false), VaporKit._OpenAPIParameterDescriptor(name: "mode", location: "query", schema: (String?).self, required: false)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: ProjectDTO.self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )

@@ -1,14 +1,15 @@
 import VaporKit
+import HTTPTypes
+import Foundation
 
 struct IntegrationHeaderMiddleware: Middleware {
     func respond(
         to request: Request,
         chainingTo next: any Responder
-    ) -> EventLoopFuture<Response> {
-        next.respond(to: request).map { response in
-            response.headers.replaceOrAdd(name: "X-VaporKit-Middleware", value: "applied")
-            return response
-        }
+    ) async throws -> Response {
+        var response = try await next.respond(to: request)
+        response.headers[HTTPField.Name("X-VaporKit-Middleware")!] = "applied"
+        return response
     }
 }
 
@@ -18,12 +19,12 @@ struct IntegrationAuthenticatedUser: Authenticatable {
     var name: String
 }
 
-struct IntegrationAuthMiddleware: AsyncMiddleware {
+struct IntegrationAuthMiddleware: Middleware {
     func respond(
         to request: Request,
-        chainingTo next: any AsyncResponder
+        chainingTo next: any Responder
     ) async throws -> Response {
-        if let name = request.headers.first(name: "X-Integration-User") {
+        if let name = request.headers[HTTPField.Name("X-Integration-User")!] {
             request.auth.login(IntegrationAuthenticatedUser(name: name))
         }
 
@@ -39,12 +40,12 @@ struct VaporKitIntegrationAPIRouter {
     }
 
     #Post("echo") { req -> String in
-        let payload = try req.content.decode(EchoPayload.self)
+        let payload = try await req.content.decode(EchoPayload.self)
         return payload.message
     }
 
     @OpenAPIIgnored
-    #On("status", method: .PATCH) { _ -> HTTPStatus in
+    #On("status", method: .patch) { _ -> HTTPResponse.Status in
         .accepted
     }
 
@@ -54,7 +55,7 @@ struct VaporKitIntegrationAPIRouter {
         "middleware"
     }
 
-    @RouteHandler("named", method: .GET)
+    @RouteHandler("named", method: .get)
     func named(req: Request) -> String {
         "named"
     }

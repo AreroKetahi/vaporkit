@@ -62,7 +62,7 @@ extension RouterMacro {
             return ""
         }
 
-        return memberAccessBaseName(from: methodArgument.expression)?.uppercased() ?? ""
+        return memberAccessBaseName(from: methodArgument.expression)?.lowercased() ?? ""
     }
 
     static func routeHandlerPath(from arguments: LabeledExprListSyntax) -> ParsedRouterPath {
@@ -98,7 +98,7 @@ extension RouterMacro {
             return ""
         }
 
-        return memberAccessBaseName(from: methodArgument.expression)?.uppercased() ?? ""
+        return memberAccessBaseName(from: methodArgument.expression)?.lowercased() ?? ""
     }
 
     static func memberAccessBaseName(from expression: ExprSyntax) -> String? {

@@ -1,5 +1,6 @@
 .DS_Store
 /.build
+/.build-linux
 /Packages
 xcuserdata/
 *.xcuserstate

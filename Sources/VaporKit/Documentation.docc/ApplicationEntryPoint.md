@@ -46,11 +46,11 @@ callbacks run in declaration order; shutdown callbacks run in reverse order.
 ```swift
 struct ServerLifecycle: VaporAppLifecycleHandler {
     func didBoot(_ application: Application) async throws {
-        application.logger.info("Server started")
+        Logger.current.info("Server started")
     }
 
-    func shutdown(_ application: Application) async throws {
-        application.logger.info("Server stopped")
+    func shutdown(_ application: Application) async {
+        Logger.current.info("Server stopped")
     }
 }
 ```
