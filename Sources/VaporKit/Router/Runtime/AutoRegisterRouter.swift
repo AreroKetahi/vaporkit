@@ -6,6 +6,7 @@
 //
 
 import Vapor
+import Logging
 
 extension Application {
     /// Discovers and registers every router marked with ``AutoRegisterable()``.
@@ -27,8 +28,8 @@ extension Application {
     /// Routers are de-duplicated by their generated descriptor id. A router
     /// marked with ``AutoRegisterable()`` must support `init()`, because
     /// discovery constructs the route collection before registration.
-    public func autoRegisterRouters() throws {
-        self.logger.info("Starting auto-registerable router discovery...")
+    public func autoRegisterRouters() async throws {
+        Logger.current.info("Starting auto-registerable router discovery...")
         var seen = Set<String>()
         
         for descriptor in _RouteDiscovery._discover() {
@@ -36,9 +37,9 @@ extension Application {
                 continue
             }
             
-            try self.register(collection: descriptor.makeCollection())
-            self.logger.info("Auto-registerable router loaded: \(descriptor.id)")
+            try await self.register(collection: descriptor.makeCollection())
+            Logger.current.info("Auto-registerable router loaded: \(descriptor.id)")
         }
-        self.logger.info("Successfully loaded \(seen.count) auto-registerable routers.")
+        Logger.current.info("Successfully loaded \(seen.count) auto-registerable routers.")
     }
 }

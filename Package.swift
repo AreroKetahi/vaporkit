@@ -1,4 +1,4 @@
-// swift-tools-version: 6.3
+// swift-tools-version: 6.4
 
 import CompilerPluginSupport
 import PackageDescription
@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "vaporkit",
     platforms: [
-        .macOS(.v14),
+        .macOS("26.2")
     ],
     products: [
         .library(
@@ -25,11 +25,16 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/swiftlang/swift-syntax.git",
-            from: "603.0.0-latest"
+            "602.0.0"..<"604.0.0"
         ),
         .package(
             url: "https://github.com/vapor/vapor.git",
-            from: "4.121.0"
+            from: "5.0.0-beta.3"
+        ),
+        .package(
+            url: "https://github.com/apple/swift-configuration.git",
+            from: "1.0.0",
+            traits: ["CommandLineArguments"]
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-macro-testing.git",
@@ -39,6 +44,15 @@ let package = Package(
             url: "https://github.com/apple/swift-argument-parser.git",
             from: "1.6.2"
         ),
+        // Work around for apple/swift-async-algorithms#459
+        .package(
+            url: "https://github.com/apple/swift-collections.git",
+            exact: "1.6.0",
+            traits: [
+                .defaults,
+                .trait(name: "UnstableContainersPreview"),
+            ]
+        )
     ],
     targets: [
         .macro(
@@ -64,7 +78,10 @@ let package = Package(
                 "VaporKitMacros",
                 "VaporKitOpenAPI",
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(
+                    name: "ArgumentParser",
+                    package: "swift-argument-parser"
+                ),
             ],
             swiftSettings: [
                 .strictMemorySafety()
@@ -86,9 +103,10 @@ let package = Package(
                     package: "swift-syntax"
                 ),
                 .product(name: "MacroTesting", package: "swift-macro-testing"),
+                .product(name: "VaporTesting", package: "vapor"),
             ]
         ),
-        
+
         .testTarget(
             name: "VaporKitIntegrationTests",
             dependencies: [

@@ -17,7 +17,7 @@ public enum OpenAPIDocumentBuilderError: Error, CustomStringConvertible {
     /// Multiple handlers resolve to the same HTTP method and complete path.
     case duplicateOperation(method: String, path: String)
     /// Multiple responses on one operation use the same HTTP status code.
-    case duplicateResponse(status: UInt, method: String, path: String)
+    case duplicateResponse(status: Int, method: String, path: String)
 
     public var description: String {
         switch self {

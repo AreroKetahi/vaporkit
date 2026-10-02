@@ -5,6 +5,8 @@
 //  Created by Arkivili Collindort on 12/06/2026
 //
 
+import HTTPTypes
+
 // MARK: Path
 
 /// Marks a typed handler function parameter as a Vapor route path parameter.
@@ -201,7 +203,7 @@ public struct Header<Value> {
     public let wrappedValue: Value
 
     /// Creates a marker for the complete request header collection.
-    public init(wrappedValue: Value) where Value == HTTPHeaders {
+    public init(wrappedValue: Value) where Value == HTTPFields {
         self.wrappedValue = wrappedValue
     }
 

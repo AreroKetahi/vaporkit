@@ -5,7 +5,7 @@
 //  Created by Arkivili Collindort on 11/07/2026
 //
 
-import enum Vapor.HTTPStatus
+import HTTPTypes
 
 // MARK: - Section descriptor model
 
@@ -45,7 +45,7 @@ public struct _OpenAPIRequestBodyDescriptor: Sendable {
 }
 
 public struct _OpenAPIResponseDescriptor: Sendable {
-    public let status: UInt
+    public let status: Int
     public let description: String
     public let body: any OpenAPISchema.Type
 
@@ -54,7 +54,7 @@ public struct _OpenAPIResponseDescriptor: Sendable {
     }
 
     public init<S: OpenAPISchema>(
-        status: HTTPStatus,
+        status: HTTPResponse.Status,
         body: S.Type,
         description: String? = nil
     ) {

@@ -1,22 +1,24 @@
 import Vapor
 import VaporKit
+import Foundation
+import Logging
 
 struct AuthMiddleware: Middleware {
-    func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-        next.respond(to: request)
+    func respond(to request: Request, chainingTo next: any Responder) async throws -> Response {
+        try await next.respond(to: request)
     }
 }
 
 struct AuditMiddleware: Middleware {
-    func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-        request.logger.info("audit middleware executed")
-        return next.respond(to: request)
+    func respond(to request: Request, chainingTo next: any Responder) async throws -> Response {
+        Logger.current.info("audit middleware executed")
+        return try await next.respond(to: request)
     }
 }
 
 struct RateLimitMiddleware: Middleware {
-    func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-        next.respond(to: request)
+    func respond(to request: Request, chainingTo next: any Responder) async throws -> Response {
+        try await next.respond(to: request)
     }
 }
 

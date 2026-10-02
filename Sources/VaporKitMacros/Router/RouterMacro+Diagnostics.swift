@@ -4,6 +4,129 @@ import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 extension RouterMacro {
+    static func rejectController(
+        on declaration: some DeclGroupSyntax,
+        in context: some MacroExpansionContext,
+        diagnosing: Bool
+    ) -> Bool {
+        guard let controller = declaration.attributes.compactMap({
+            $0.as(AttributeSyntax.self)
+        }).first(where: {
+            attributeName(of: $0) == controllerAttributeName
+        }) else {
+            return false
+        }
+
+        if diagnosing {
+            diagnoseIgnoredVaporRouteMacros(in: declaration, context: context)
+            context.diagnose(
+                Diagnostic(
+                    node: controller,
+                    message: RouteMacroDiagnostic.incompatibleController,
+                    fixIts: [
+                        FixIt(
+                            message: RouteMacroFixIt.removeController,
+                            changes: [
+                                .replace(
+                                    oldNode: Syntax(controller),
+                                    newNode: Syntax(AttributeListSyntax([]))
+                                )
+                            ]
+                        )
+                    ]
+                )
+            )
+        }
+        return true
+    }
+
+    static func diagnoseIgnoredVaporRouteMacros(
+        in declaration: some DeclGroupSyntax,
+        context: some MacroExpansionContext
+    ) {
+        let replacements = [
+            "GET": "Get",
+            "POST": "Post",
+            "PUT": "Put",
+            "DELETE": "Delete",
+            "Patch": "On",
+        ]
+
+        for member in declaration.memberBlock.members {
+            guard let function = member.decl.as(FunctionDeclSyntax.self) else {
+                continue
+            }
+
+            for attribute in function.attributes.compactMap({ $0.as(AttributeSyntax.self) }) {
+                guard let vaporName = attributeName(of: attribute),
+                      let vaporKitName = replacements[vaporName]
+                else {
+                    continue
+                }
+
+                let fixIts = replacementForVaporRouteAttribute(
+                    attribute,
+                    named: vaporName,
+                    replacement: vaporKitName
+                ).map { replacement in
+                    [
+                        FixIt(
+                            message: ReplaceVaporRouteMacroFixIt(
+                                vaporName: vaporName,
+                                vaporKitName: vaporKitName
+                            ),
+                            changes: [
+                                .replace(oldNode: Syntax(attribute), newNode: Syntax(replacement))
+                            ]
+                        )
+                    ]
+                } ?? []
+
+                context.diagnose(
+                    Diagnostic(
+                        node: attribute,
+                        message: IgnoredVaporRouteMacroDiagnostic(
+                            vaporName: vaporName,
+                            vaporKitName: vaporKitName
+                        ),
+                        fixIts: fixIts
+                    )
+                )
+            }
+        }
+    }
+
+    static func replacementForVaporRouteAttribute(
+        _ attribute: AttributeSyntax,
+        named vaporName: String,
+        replacement vaporKitName: String
+    ) -> AttributeSyntax? {
+        let arguments: LabeledExprListSyntax
+        switch attribute.arguments {
+        case .argumentList(let list):
+            arguments = list
+        case nil:
+            arguments = []
+        default:
+            return nil
+        }
+
+        guard arguments.count <= 1,
+              arguments.first?.label == nil
+        else {
+            return nil
+        }
+
+        let renderedArgument = arguments.first.map { $0.expression.trimmedDescription }
+        if vaporName == "Patch" {
+            let prefix = renderedArgument.map { "\($0), " } ?? ""
+            return AttributeSyntax("@On(\(raw: prefix)method: .patch)")
+        }
+
+        let suffix = renderedArgument.map { "(\($0))" } ?? ""
+        return AttributeSyntax("@\(raw: vaporKitName)\(raw: suffix)")
+    }
+
     static func diagnoseMissingTrailingClosure(
         for expansion: MacroExpansionDeclSyntax,
         macroName: RouteMacroName,

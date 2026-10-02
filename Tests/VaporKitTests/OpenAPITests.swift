@@ -52,7 +52,7 @@ private struct OpenAPITestDTO {
             handlers: [
                 .init(
                     identifier: "UserRouter.user",
-                    method: "GET",
+                    method: "get",
                     path: ":id",
                     parameters: [
                         .init(name: "id", location: "path", schema: UUID.self, required: true),
@@ -86,7 +86,7 @@ private struct OpenAPITestDTO {
             handlers: [
                 .init(
                     identifier: "SessionRouter.logout",
-                    method: "POST",
+                    method: "post",
                     path: "logout",
                     responses: [.init(status: .ok, body: Never.self)]
                 )
@@ -111,7 +111,7 @@ private struct OpenAPITestDTO {
             handlers: [
                 .init(
                     identifier: "Users.create",
-                    method: "POST",
+                    method: "post",
                     path: "",
                     parameters: [
                         .init(
@@ -145,7 +145,7 @@ private struct OpenAPITestDTO {
         let shared = _OpenAPIRouterDescriptor(
             identifier: "SharedRouter",
             path: "items",
-            handlers: [.init(identifier: "SharedRouter.list", method: "GET", path: "", parameters: [], responses: [])],
+            handlers: [.init(identifier: "SharedRouter.list", method: "get", path: "", parameters: [], responses: [])],
             registeredRouters: []
         )
         let v1 = _OpenAPIRouterDescriptor(
@@ -188,7 +188,7 @@ private struct OpenAPITestDTO {
             handlers: [
                 .init(
                     identifier: "Users.show",
-                    method: "GET",
+                    method: "get",
                     path: ":id",
                     responses: [
                         .init(status: .ok, body: String.self),
@@ -212,7 +212,7 @@ private struct OpenAPITestDTO {
         let descriptor = _OpenAPIRouterDescriptor(
             identifier: "HealthRouter",
             path: "api",
-            handlers: [.init(identifier: "HealthRouter.health", method: "GET", path: "health")],
+            handlers: [.init(identifier: "HealthRouter.health", method: "get", path: "health")],
             registeredRouters: []
         )
         let data = try OpenAPIExporter.data(

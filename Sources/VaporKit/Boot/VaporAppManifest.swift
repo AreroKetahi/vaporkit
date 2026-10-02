@@ -6,6 +6,7 @@
 //
 
 import Vapor
+import Configuration
 
 /// An immutable description of a Vapor application's startup behavior.
 ///
@@ -17,7 +18,16 @@ public struct VaporAppManifest: Sendable {
     public let configurations: [any VaporAppConfiguration]
 
     /// The handlers that observe the application's runtime lifecycle.
-    public let lifecycleHandlers: [any VaporAppLifecycleHandler]
+    public let lifecycleHandlers: [any LifecycleHandler]
+    
+    /// The providers used after command-line passthrough configuration.
+    public let configReaderManifest: VaporConfigReaderManifest
+    
+    /// The server settings supplied when the application is created.
+    public let serverConfiguration: ServerConfiguration
+    
+    /// The service settings supplied when the application is created.
+    public let serviceConfiguration: Application.ServiceConfiguration
 
     /// Creates a manifest from configuration and lifecycle stages.
     ///
@@ -25,37 +35,63 @@ public struct VaporAppManifest: Sendable {
     ///   - configurations: The configuration stages to execute in order.
     ///   - lifecycleHandlers: The lifecycle handlers to notify in order during
     ///     boot and in reverse order during shutdown.
+    ///   - configReader: The ordered configuration providers and optional reporter.
+    ///   - serverConfiguration: The initial Vapor server settings.
+    ///   - serviceConfiguration: The initial Vapor service settings.
     public init(
         configurations: [any VaporAppConfiguration] = [],
-        lifecycleHandlers: [any VaporAppLifecycleHandler] = []
+        lifecycleHandlers: [any LifecycleHandler] = [],
+        configReader: VaporConfigReaderManifest = .default,
+        serverConfiguration: ServerConfiguration = ServerConfiguration(),
+        serviceConfiguration: Application.ServiceConfiguration = Application.ServiceConfiguration()
     ) {
         self.configurations = configurations
         self.lifecycleHandlers = lifecycleHandlers
+        self.configReaderManifest = configReader
+        self.serverConfiguration = serverConfiguration
+        self.serviceConfiguration = serviceConfiguration
     }
 
-    func configure(_ application: Application) async throws {
+    func _configure(_ application: Application) async throws {
         for configuration in configurations {
             try await configuration.configure(application)
         }
     }
 
-    func willBoot(_ application: Application) async throws {
+    func _installLifecycleHandlers(on application: Application) {
         for handler in lifecycleHandlers {
-            try await handler.willBoot(application)
+            application.addLifecycleHandler(handler)
         }
     }
+}
 
-    func didBoot(_ application: Application) async throws {
-        for handler in lifecycleHandlers {
-            try await handler.didBoot(application)
-        }
+/// Configuration sources for the application's startup reader.
+///
+/// The server command prepends its passthrough arguments to these providers.
+/// See <doc:ApplicationEntryPoint> for configuration precedence and examples.
+public struct VaporConfigReaderManifest: Sendable {
+    /// Providers queried in declaration order after command-line arguments.
+    public let configProviders: [any ConfigProvider]
+    /// An optional access reporter. The default server command does not yet use it.
+    public let accessReporter: (any AccessReporter)?
+    
+    /// Describes configuration providers and an optional access reporter.
+    ///
+    /// - Parameters:
+    ///   - providers: Sources queried in order until a value is found.
+    ///   - accessReporter: A reporter for configuration access events.
+    public init(providers: [any ConfigProvider], accessReporter: (any AccessReporter)? = nil) {
+        self.configProviders = providers
+        self.accessReporter = accessReporter
     }
-
-    func shutdown(_ application: Application) async throws {
-        for handler in lifecycleHandlers.reversed() {
-            try await handler.shutdown(application)
-        }
-    }
+    
+    /// Reads environment variables after command-line passthrough arguments.
+    public static let `default` = VaporConfigReaderManifest(
+        providers: [
+            EnvironmentVariablesProvider(),
+        ],
+        accessReporter: nil
+    )
 }
 
 /// A stage that configures a Vapor application before its lifecycle begins.
@@ -74,27 +110,7 @@ public protocol VaporAppConfiguration: Sendable {
 ///
 /// Lifecycle handling begins after every ``VaporAppConfiguration`` completes
 /// successfully.
-public protocol VaporAppLifecycleHandler: Sendable {
-    /// Performs work immediately before Vapor boots the application.
-    ///
-    /// - Parameter application: The application that is about to boot.
-    func willBoot(_ application: Application) async throws
-
-    /// Performs work after Vapor boots the application.
-    ///
-    /// - Parameter application: The application that finished booting.
-    func didBoot(_ application: Application) async throws
-
-    /// Releases lifecycle resources before the application shuts down.
-    ///
-    /// Manifest shutdown callbacks run in reverse declaration order.
-    ///
-    /// - Parameter application: The application that is shutting down.
-    func shutdown(_ application: Application) async throws
-}
-
-public extension VaporAppLifecycleHandler {
-    func willBoot(_ application: Application) async throws {}
-    func didBoot(_ application: Application) async throws {}
-    func shutdown(_ application: Application) async throws {}
-}
+///
+/// This is an alias of `Vapor.LifecycleHandler`; new code can adopt the Vapor
+/// protocol directly.
+public typealias VaporAppLifecycleHandler = LifecycleHandler

@@ -13,6 +13,9 @@ extension RouterMacro: PeerMacro {
               let typeName = nominalTypeName(of: declaration) else {
             return []
         }
+        guard !rejectController(on: declaration, in: context, diagnosing: false) else {
+            return []
+        }
 
         var peers: [DeclSyntax] = []
         if !hasAttribute(named: openAPIIgnoredAttributeName, in: declaration.attributes) {

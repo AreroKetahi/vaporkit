@@ -1,5 +1,6 @@
 import Testing
 import Vapor
+import VaporTesting
 @testable import VaporKit
 
 private struct VaporApplicationFixture: VaporApplication {
@@ -48,215 +49,75 @@ private struct ConfiguredVaporApplicationFixture: VaporApplication {
     }
 
     @Test func manifestExecutesLifecycleInOrder() async throws {
-        let application = try await Application.make(.testing)
-        let manifest = VaporAppManifest(
-            configurations: [RecordedConfiguration()],
-            lifecycleHandlers: [FirstLifecycle(), SecondLifecycle()]
-        )
-
-        try await manifest.configure(application)
-        try await manifest.willBoot(application)
-        try await manifest.didBoot(application)
-        try await manifest.shutdown(application)
-
-        #expect(application.storage[LifecycleEventsKey.self] == [
-            "configure",
-            "first.willBoot", "second.willBoot",
-            "first.didBoot", "second.didBoot",
-            "second.shutdown", "first.shutdown",
-        ])
-        try await application.asyncShutdown()
-    }
-
-    @Test func configurationFailureDoesNotEnterManifestLifecycle() async {
-        var events: [BootStage] = []
-        var reported: [BootFailure] = []
-
-        do {
-            try await runBootSequence(
-                failingAt: .configure,
-                events: &events,
-                reported: &reported
+        try await withApp { application in
+            let recorder = LifecycleRecorder()
+            let manifest = VaporAppManifest(
+                configurations: [RecordedConfiguration(recorder: recorder)],
+                lifecycleHandlers: [
+                    FirstLifecycle(recorder: recorder),
+                    SecondLifecycle(recorder: recorder),
+                ]
             )
-            Issue.record("Expected the boot sequence to fail.")
-        } catch {
-            #expect(error as? BootFailure == .configure)
-        }
-
-        #expect(events == [.configure, .applicationShutdown])
-        #expect(reported == [.configure])
-    }
-
-    @Test(arguments: [
-        BootStage.willBoot,
-        .boot,
-        .didBoot,
-        .execute,
-    ])
-    func lifecycleFailureRunsBothShutdownPhases(failingAt stage: BootStage) async {
-        var events: [BootStage] = []
-        var reported: [BootFailure] = []
-
-        do {
-            try await runBootSequence(
-                failingAt: stage,
-                events: &events,
-                reported: &reported
-            )
-            Issue.record("Expected the boot sequence to fail.")
-        } catch {
-            #expect(error as? BootFailure == BootFailure(stage))
-        }
-
-        #expect(events.last == .applicationShutdown)
-        #expect(events.dropLast().last == .manifestShutdown)
-        #expect(reported.first == BootFailure(stage))
-    }
-
-    @Test(arguments: [
-        BootStage.manifestShutdown,
-        .applicationShutdown,
-    ])
-    func shutdownFailureIsPropagated(failingAt stage: BootStage) async {
-        var events: [BootStage] = []
-        var reported: [BootFailure] = []
-
-        do {
-            try await runBootSequence(
-                failingAt: stage,
-                events: &events,
-                reported: &reported
-            )
-            Issue.record("Expected the boot sequence to fail.")
-        } catch {
-            #expect(error as? BootFailure == BootFailure(stage))
-        }
-
-        #expect(events.suffix(2) == [.manifestShutdown, .applicationShutdown])
-        #expect(reported == [BootFailure(stage)])
-    }
-
-    @Test func shutdownFailuresDoNotReplaceThePrimaryFailure() async {
-        var reported: [BootFailure] = []
-
-        do {
-            try await _runVaporBootSequence(
-                configure: {},
-                willBoot: {},
-                boot: { throw BootFailure.boot },
-                didBoot: {},
-                execute: {},
-                manifestShutdown: { throw BootFailure.manifestShutdown },
-                applicationShutdown: { throw BootFailure.applicationShutdown },
-                report: {
-                    if let failure = $0 as? BootFailure { reported.append(failure) }
-                }
-            )
-            Issue.record("Expected the boot sequence to fail.")
-        } catch {
-            #expect(error as? BootFailure == .boot)
-        }
-
-        #expect(reported == [.boot, .manifestShutdown, .applicationShutdown])
-    }
-}
-
-enum BootStage: CaseIterable, Equatable, Sendable {
-    case configure
-    case willBoot
-    case boot
-    case didBoot
-    case execute
-    case manifestShutdown
-    case applicationShutdown
-}
-
-private enum BootFailure: Error, Equatable {
-    case configure
-    case willBoot
-    case boot
-    case didBoot
-    case execute
-    case manifestShutdown
-    case applicationShutdown
-
-    init(_ stage: BootStage) {
-        switch stage {
-        case .configure: self = .configure
-        case .willBoot: self = .willBoot
-        case .boot: self = .boot
-        case .didBoot: self = .didBoot
-        case .execute: self = .execute
-        case .manifestShutdown: self = .manifestShutdown
-        case .applicationShutdown: self = .applicationShutdown
+            
+            try await manifest._configure(application)
+            manifest._installLifecycleHandlers(on: application)
+            try await application.boot()
+            try await application.shutdown()
+            
+            #expect(await recorder.events == [
+                "configure",
+                "first.willBoot", "second.willBoot",
+                "first.didBoot", "second.didBoot",
+                "second.shutdown", "first.shutdown",
+            ])
         }
     }
 }
 
-private func runBootSequence(
-    failingAt failure: BootStage,
-    events: inout [BootStage],
-    reported: inout [BootFailure]
-) async throws {
-    func stage(_ stage: BootStage) throws {
-        events.append(stage)
-        if stage == failure { throw BootFailure(stage) }
+private actor LifecycleRecorder {
+    private(set) var events: [String] = []
+
+    func record(_ event: String) {
+        events.append(event)
     }
-
-    try await _runVaporBootSequence(
-        configure: { try stage(.configure) },
-        willBoot: { try stage(.willBoot) },
-        boot: { try stage(.boot) },
-        didBoot: { try stage(.didBoot) },
-        execute: { try stage(.execute) },
-        manifestShutdown: { try stage(.manifestShutdown) },
-        applicationShutdown: { try stage(.applicationShutdown) },
-        report: {
-            if let failure = $0 as? BootFailure { reported.append(failure) }
-        }
-    )
-}
-
-private struct LifecycleEventsKey: StorageKey {
-    typealias Value = [String]
-}
-
-private func record(_ event: String, in application: Application) {
-    var events = application.storage[LifecycleEventsKey.self] ?? []
-    events.append(event)
-    application.storage[LifecycleEventsKey.self] = events
 }
 
 private struct RecordedConfiguration: VaporAppConfiguration {
+    let recorder: LifecycleRecorder
+
     func configure(_ application: Application) async throws {
-        record("configure", in: application)
+        await recorder.record("configure")
     }
 }
 
 private struct FirstLifecycle: VaporAppLifecycleHandler {
+    let recorder: LifecycleRecorder
+
     func willBoot(_ application: Application) async throws {
-        record("first.willBoot", in: application)
+        await recorder.record("first.willBoot")
     }
 
     func didBoot(_ application: Application) async throws {
-        record("first.didBoot", in: application)
+        await recorder.record("first.didBoot")
     }
 
-    func shutdown(_ application: Application) async throws {
-        record("first.shutdown", in: application)
+    func shutdown(_ application: Application) async {
+        await recorder.record("first.shutdown")
     }
 }
 
 private struct SecondLifecycle: VaporAppLifecycleHandler {
+    let recorder: LifecycleRecorder
+
     func willBoot(_ application: Application) async throws {
-        record("second.willBoot", in: application)
+        await recorder.record("second.willBoot")
     }
 
     func didBoot(_ application: Application) async throws {
-        record("second.didBoot", in: application)
+        await recorder.record("second.didBoot")
     }
 
-    func shutdown(_ application: Application) async throws {
-        record("second.shutdown", in: application)
+    func shutdown(_ application: Application) async {
+        await recorder.record("second.shutdown")
     }
 }

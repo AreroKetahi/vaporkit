@@ -11,14 +11,13 @@ import ArgumentParser
 ///
 /// Use `VaporApplication` to describe an application's startup configuration
 /// with a ``VaporAppManifest``. The default command starts the Vapor server.
-/// Arguments that don't select another subcommand pass through to Vapor for
-/// ConsoleKit to interpret.
+/// Passthrough arguments become command-line configuration values for Vapor.
 ///
 /// ```swift
 /// @main
 /// struct MyServer: VaporApplication {
 ///     static let manifest = VaporAppManifest(
-///         configurations: [ServerConfiguration()]
+///         configurations: [AppSetup()]
 ///     )
 /// }
 /// ```

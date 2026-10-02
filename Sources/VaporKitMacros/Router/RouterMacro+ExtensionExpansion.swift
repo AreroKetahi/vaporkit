@@ -11,9 +11,13 @@ extension RouterMacro: ExtensionMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
+        guard !rejectController(on: declaration, in: context, diagnosing: false) else {
+            return []
+        }
+
         // `@Router` always turns the annotated type into a `RouteCollection`, even when every
         // registration came from existing `@RouteHandler` functions instead of freestanding macros.
-        try [
+        return try [
             ExtensionDeclSyntax("extension \(type): Vapor.RouteCollection {}")
         ]
     }

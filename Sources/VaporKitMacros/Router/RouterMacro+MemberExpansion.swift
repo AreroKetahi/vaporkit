@@ -10,6 +10,10 @@ extension RouterMacro: MemberMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
+        guard !rejectController(on: declaration, in: context, diagnosing: true) else {
+            return []
+        }
+
         // Member expansion is the high-level orchestration point:
         // 1. parse both route declaration styles into metadata
         // 2. validate route contracts against handler bodies

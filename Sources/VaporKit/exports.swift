@@ -20,3 +20,8 @@
 #else
 #error("VaporKit requires swift-argument-parser, but ArgumentParser is unavailable on this target platform.")
 #endif
+
+#if canImport(Logging)
+@_documentation(visibility: internal)
+@_exported import ArgumentParser
+#endif

@@ -26,3 +26,7 @@ pays only for the features it uses.
 ### Application Entry Point
 
 - <doc:ApplicationEntryPoint>
+
+### Testing
+
+- <doc:TestingAVaporApplication>

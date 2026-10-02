@@ -23,7 +23,7 @@ The router becomes an ordinary Vapor `RouteCollection`. Register it explicitly
 when it has dependencies:
 
 ```swift
-try application.register(collection: UserRoutes())
+try await application.register(collection: UserRoutes())
 ```
 
 For dependency-free routers, opt in to runtime discovery with

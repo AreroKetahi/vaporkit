@@ -7,7 +7,7 @@ Declare Vapor routes with compile-time generated code and optional runtime disco
 VaporKit offers two levels of route declaration. Freestanding route macros such
 as `#Get` are the shortest path for inline handlers. Attached route macros such
 as `@Get` provide the complete routing model, including parameter injection,
-middleware, OpenAPI metadata, and WebSocket callbacks.
+middleware and OpenAPI metadata.
 
 Group either style in a type annotated with ``Router(_:)``. The macro generates
 an ordinary Vapor `RouteCollection`, so routing itself adds no runtime layer.
@@ -43,7 +43,7 @@ still generating native Vapor registration code.
 @Router("health")
 struct HealthRoutes {
     #Get { _ in HTTPStatus.ok }
-    #On("ready", method: .HEAD) { _ in HTTPStatus.ok }
+    #On("ready", method: .head) { _ in HTTPStatus.ok }
 }
 ```
 
@@ -80,8 +80,8 @@ struct HealthRoutes {
     #Get { _ in HTTPStatus.ok }
 }
 
-func configure(_ application: Application) throws {
-    try application.autoRegisterRouters()
+func configure(_ application: Application) async throws {
+    try await application.autoRegisterRouters()
 }
 ```
 
@@ -91,6 +91,10 @@ Start with <doc:MigratingFromVaporRouting> to translate an existing
 `RouteCollection` incrementally while preserving Vapor's routing behavior.
 
 ### WebSocket Routes
+
+WebSocket macros are unavailable with the current Vapor 5 beta dependency.
+The following example describes the API available on the Vapor 4 release line;
+it cannot be used in a Vapor 5 application yet.
 
 Declare a WebSocket upgrade inside a router and add callbacks in its upgrade
 body:
@@ -143,7 +147,7 @@ struct ChatRoutes {
 - ``Put(_:)``
 - ``Delete(_:)``
 - ``On(_:method:)``
-- ``RouteHandler(_:method:)-xbrl``
+- ``RouteHandler(_:method:)-(StaticString...,_)``
 - ``RouteHandler(_:method:)-(RouterPath?,_)``
 
 ### Route Parameters
@@ -167,6 +171,7 @@ struct ChatRoutes {
 - ``AutoRegisterable()``
 - ``AutoRegisterRoutesConfiguration``
 
+<!-- Disabled
 ### WebSocket Routes
 
 - ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)``
@@ -174,6 +179,7 @@ struct ChatRoutes {
 - ``OnBinary(action:)``
 - ``OnClose(action:)``
 
+-->
 ### Articles
 
 - <doc:CreateRouter>

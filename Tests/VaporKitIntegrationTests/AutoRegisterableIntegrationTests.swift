@@ -5,11 +5,12 @@ import VaporTesting
 @Suite struct AutoRegisterableIntegrationTests {
     @Test func autoRegisterableRoutersAreDiscoveredAndRegistered() async throws {
         try await withApp { app in
-            try app.autoRegisterRouters()
+            try await app.autoRegisterRouters()
 
-            try await app.testing().test(.GET, "/_test/integration/auto/ping") { response in
+            try await app.testing { client in
+                let response = try await client.get("/_test/integration/auto/ping")
                 #expect(response.status == .ok)
-                #expect(response.body.string == "auto-ok")
+                try #expect(await response.body.requireString() == "auto-ok")
             }
         }
     }

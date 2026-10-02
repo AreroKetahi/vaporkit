@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import enum Vapor.HTTPStatus
+import HTTPTypes
 
 /// Excludes a router or route handler from generated OpenAPI documents.
 ///
@@ -36,7 +36,7 @@ public macro OpenAPIRequest<S: OpenAPISchema>(
 /// to ``OpenAPISchema``.
 @attached(peer)
 public macro OpenAPIResponse<S: OpenAPISchema>(
-    _ status: HTTPStatus = .ok,
+    _ status: HTTPResponse.Status = .ok,
     body: S.Type,
     description: String? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
@@ -48,7 +48,7 @@ public macro OpenAPIResponse<S: OpenAPISchema>(
 /// body schema.
 @attached(peer)
 public macro OpenAPIResponse(
-    _ status: HTTPStatus = .ok,
+    _ status: HTTPResponse.Status = .ok,
     description: String? = nil
 ) = #externalMacro(module: "VaporKitMacros", type: "EmptyMacro")
 

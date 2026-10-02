@@ -1,4 +1,6 @@
 import Testing
+import Foundation
+import HTTPTypes
 import VaporKit
 import VaporTesting
 
@@ -35,21 +37,18 @@ import VaporTesting
 
     @Test func routerMacrosRegisterWorkingVaporRoutes() async throws {
         try await withApp { app in
-            try app.register(collection: VaporKitIntegrationAPIRouter())
-
-            try await app.testing().test(.GET, "/_test/integration/api/hello") { response in
+            try await app.register(collection: VaporKitIntegrationAPIRouter())
+            
+            try await app.testing { client in
+                var response = try await client.get("/_test/integration/api/hello")
                 #expect(response.status == .ok)
-                #expect(response.body.string == "hello")
-            }
+                try #expect(await response.body.requireString() == "hello")
 
-            try await app.testing().test(.POST, "/_test/integration/api/echo") { request in
-                try request.content.encode(EchoPayload(message: "echoed"))
-            } afterResponse: { response in
+                response = try await client.post("/_test/integration/api/echo", content: EchoPayload(message: "echoed"))
                 #expect(response.status == .ok)
-                #expect(response.body.string == "echoed")
-            }
+                try #expect(await response.body.requireString() == "echoed")
 
-            try await app.testing().test(.PATCH, "/_test/integration/api/status") { response in
+                response = try await client.patch("/_test/integration/api/status")
                 #expect(response.status == .accepted)
             }
         }
@@ -57,118 +56,104 @@ import VaporTesting
 
     @Test func middlewareRouteHandlerAndChildRoutersBehaveLikeNativeVaporRoutes() async throws {
         try await withApp { app in
-            try app.register(collection: VaporKitIntegrationAPIRouter())
+            try await app.register(collection: VaporKitIntegrationAPIRouter())
 
-            try await app.testing().test(.GET, "/_test/integration/api/middleware") { response in
+            try await app.testing { client in
+                var response = try await client.get("/_test/integration/api/middleware")
                 #expect(response.status == .ok)
-                #expect(response.headers.first(name: "X-VaporKit-Middleware") == "applied")
-                #expect(response.body.string == "middleware")
-            }
+                #expect(response.headers[HTTPField.Name("X-VaporKit-Middleware")!] == "applied")
+                try #expect(await response.body.requireString() == "middleware")
 
-            try await app.testing().test(.GET, "/_test/integration/api/named") { response in
+                response = try await client.get("/_test/integration/api/named")
                 #expect(response.status == .ok)
-                #expect(response.body.string == "named")
-            }
+                try #expect(await response.body.requireString() == "named")
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/42") { response in
+                response = try await client.get("/_test/integration/api/users/42")
                 #expect(response.status == .ok)
-                #expect(response.body.string == "user:42")
-            }
+                try #expect(await response.body.requireString() == "user:42")
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/typed/42") { response in
+                response = try await client.get("/_test/integration/api/users/typed/42")
                 #expect(response.status == .ok)
-                #expect(response.body.string == "typed:42:GET")
-            }
+                try #expect(await response.body.requireString() == "typed:42:GET")
 
-            try await app.testing().test(
-                .GET,
+                response = try await client.get(
                 "/_test/integration/api/users/router-path/label/vapor"
-            ) { response in
+                )
                 #expect(response.status == .ok)
-                #expect(response.body.string == "label:vapor")
-            }
+                try #expect(await response.body.requireString() == "label:vapor")
 
-            let id = UUID()
-            try await app.testing().test(
-                .GET,
-                "/_test/integration/api/users/router-path/decoded/\(id.uuidString)"
-            ) { response in
+                let id = UUID()
+                response = try await client.get(
+                    "/_test/integration/api/users/router-path/decoded/\(id.uuidString)"
+                )
                 #expect(response.status == .ok)
-                #expect(response.body.string == "decoded:\(id.uuidString)")
-            }
+                try #expect(await response.body.requireString() == "decoded:\(id.uuidString)")
 
-            try await app.testing().test(
-                .GET,
+                response = try await client.get(
                 "/_test/integration/api/users/router-path/decoded/not-a-uuid"
-            ) { response in
-                #expect(response.status == .unprocessableEntity)
-            }
+                )
+                #expect(response.status == .unprocessableContent)
 
-            try await app.testing().test(
-                .GET,
+                response = try await client.get(
                 "/_test/integration/api/users/router-path/converted/42"
-            ) { response in
+                )
                 #expect(response.status == .ok)
-                #expect(response.body.string == "converted:42")
-            }
+                try #expect(await response.body.requireString() == "converted:42")
 
-            try await app.testing().test(
-                .GET,
+                response = try await client.get(
                 "/_test/integration/api/users/router-path/converted/not-an-int"
-            ) { response in
-                #expect(response.status == .unprocessableEntity)
-            }
+                )
+                #expect(response.status == .unprocessableContent)
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth") { request in
-                request.headers.replaceOrAdd(name: "X-Integration-User", value: "vapor")
-            } afterResponse: { response in
+                let userHeader = HTTPField.Name("X-Integration-User")!
+                response = try await client.get("/_test/integration/api/users/typed-auth") {
+                    $0.headers[userHeader] = "vapor"
+                }
                 #expect(response.status == .ok)
-                #expect(response.body.string == "auth:vapor:GET")
-            }
+                try #expect(await response.body.requireString() == "auth:vapor:GET")
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth") { response in
+                response = try await client.get("/_test/integration/api/users/typed-auth")
                 #expect(response.status == .unauthorized)
-            }
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth/optional") { response in
+                response = try await client.get("/_test/integration/api/users/typed-auth/optional")
                 #expect(response.status == .ok)
-                #expect(response.body.string == "auth:guest:GET")
-            }
+                try #expect(await response.body.requireString() == "auth:guest:GET")
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth/optional") { request in
-                request.headers.replaceOrAdd(name: "X-Integration-User", value: "vapor")
-            } afterResponse: { response in
+                response = try await client.get("/_test/integration/api/users/typed-auth/optional") {
+                    $0.headers[userHeader] = "vapor"
+                }
                 #expect(response.status == .ok)
-                #expect(response.body.string == "auth:vapor:GET")
-            }
+                try #expect(await response.body.requireString() == "auth:vapor:GET")
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth/default") { response in
+                response = try await client.get("/_test/integration/api/users/typed-auth/default")
                 #expect(response.status == .ok)
-                #expect(response.body.string == "auth:guest:GET")
-            }
+                try #expect(await response.body.requireString() == "auth:guest:GET")
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/typed-auth/default") { request in
-                request.headers.replaceOrAdd(name: "X-Integration-User", value: "vapor")
-            } afterResponse: { response in
+                response = try await client.get("/_test/integration/api/users/typed-auth/default") {
+                    $0.headers[userHeader] = "vapor"
+                }
                 #expect(response.status == .ok)
-                #expect(response.body.string == "auth:vapor:GET")
-            }
+                try #expect(await response.body.requireString() == "auth:vapor:GET")
 
-            try await app.testing().test(.GET, "/_test/integration/api/users/typed/42/query?term=vapor&limit=2&filter[name]=owner&page[number]=3") { response in
+                response = try await client.get(
+                    "/_test/integration/api/users/typed/42/query?term=vapor&limit=2&filter[name]=owner&page[number]=3"
+                )
                 #expect(response.status == .ok)
-                #expect(response.body.string == "query:42:vapor:2:owner:3")
-            }
+                try #expect(await response.body.requireString() == "query:42:vapor:2:owner:3")
 
-            try await app.testing().test(.POST, "/_test/integration/api/users/typed/42/content?audit[reason]=rename") { request in
-                try request.content.encode(UpdateUserBody(name: "updated"))
-            } afterResponse: { response in
+                response = try await client.post(
+                    "/_test/integration/api/users/typed/42/content?audit[reason]=rename",
+                    content: UpdateUserBody(name: "updated")
+                )
                 #expect(response.status == .ok)
-                #expect(response.body.string == "content:42:rename:updated")
-            }
+                try #expect(await response.body.requireString() == "content:42:rename:updated")
 
-            try await app.testing().test(.POST, "/_test/integration/api/users/typed/42/defaults?name=neo") { response in
+                response = try await client.post(
+                    "/_test/integration/api/users/typed/42/defaults?name=neo",
+                    headers: [:]
+                )
                 #expect(response.status == .ok)
-                #expect(response.body.string == "defaults:42:neo:1:full:fallback")
+                try #expect(await response.body.requireString() == "defaults:42:neo:1:full:fallback")
             }
         }
     }

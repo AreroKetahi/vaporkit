@@ -4,8 +4,132 @@ import SwiftSyntaxMacros
 import MacroTesting
 import Testing
 
-@Suite(.macros(testMacros))
+@Suite(.macros(diagnosticTestMacros))
 struct RouterMacroDiagnosticTests {
+    @Test func rejectsVaporController() throws {
+        #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Controller
+            @Router
+            struct MyRoute {}
+            """
+        } diagnostics: {
+            """
+            @Controller
+            ┬──────────
+            ╰─ 🛑 Vapor's @Controller and VaporKit's @Router cannot be used together. Choose one.
+               ✏️ Remove @Controller
+            @Router
+            struct MyRoute {}
+            """
+        } fixes: {
+            """
+            @Router
+            struct MyRoute {}
+            """
+        } expansion: {
+            """
+            struct MyRoute {
+            
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+            
+                }
+            }
+            
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private nonisolated let __macro_local_24VaporKitOpenAPI_accessorfMu_: VaporKit._OpenAPIRegisterAccessor = { outValue, type, _, _ in
+                guard unsafe type.load(as: Any.Type.self) == VaporKit._OpenAPIRouterDescriptor.self else {
+                    return false
+                }
+            
+                unsafe outValue.initializeMemory(
+                    as: VaporKit._OpenAPIRouterDescriptor.self,
+                    to: VaporKit._OpenAPIRouterDescriptor(
+                        identifier: "MyRoute",
+                        path: "",
+                        handlers: [],
+                        registeredRouters: []
+                    )
+                )
+                return true
+            }
+            
+            #if objectFormat(MachO)
+            @section("__DATA_CONST,__swift5_vkoa")
+            #elseif objectFormat(ELF)
+            @section("swift5_vkoa")
+            #elseif objectFormat(COFF)
+            @section(".sw5vkoa")
+            #endif
+            @used
+            @available(*, deprecated, message: "This property is an implementation detail of VaporKit. Do not use it directly.")
+            private let __macro_local_22VaporKitOpenAPI_recordfMu_: VaporKit._OpenAPIRegisterRecord = (
+                0x766B_6F61,
+                1,
+                {
+                    unsafe __macro_local_24VaporKitOpenAPI_accessorfMu_($0, $1, $2, $3)
+                },
+                0,
+                0
+            )
+            
+            extension MyRoute: Vapor.RouteCollection {
+            }
+            """
+        }
+        #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
+    @Test func replacesIgnoredVaporRouteMacros() throws {
+        #if canImport(VaporKitMacros)
+        assertMacro {
+            """
+            @Controller
+            @Router
+            struct MyRoute {
+                @Get("users")
+                func users() {}
+
+                @Patch("users")
+                func update() {}
+            }
+            """
+        } diagnostics: {
+            """
+            @Controller
+            ┬──────────
+            ╰─ 🛑 Vapor's @Controller and VaporKit's @Router cannot be used together. Choose one.
+               ✏️ Remove @Controller
+            @Router
+            struct MyRoute {
+                @Get("users")
+                func users() {}
+            
+                @Patch("users")
+                ┬──────────────
+                ╰─ ⚠️ Vapor's @Patch macro is ignored by @Router. Use VaporKit's @On instead.
+                   ✏️ Replace @Patch with @On
+                func update() {}
+            }
+            """
+        } fixes: {
+            """
+            @Router
+            struct MyRoute {
+                @Get("users")
+                func users() {}@On("users", method: .patch)
+                func update() {}
+            }
+            """
+        }
+        #else
+        throw Test.cancel("macros are only supported when running tests for the host platform")
+        #endif
+    }
+
     @Test func requiresTrailingClosure() throws {
         #if canImport(VaporKitMacros)
         assertMacro {
@@ -40,12 +164,15 @@ struct RouterMacroDiagnosticTests {
         } expansion: {
             """
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", use: __macro_local_12RouteHandlerfMu_)
+                #Get("test"){ req in
+                    return "ok"
+                }
+            
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "test", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.ResponseEncodable {
                         return "ok"
                 }
             }
@@ -61,7 +188,7 @@ struct RouterMacroDiagnosticTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.GET.test", method: "GET", path: "test", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.get.test", method: "get", path: "test", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -183,12 +310,19 @@ struct RouterMacroDiagnosticTests {
         } expansion: {
             """
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
+                #Get("test/:id") { req in
+                    let loader = {
+                        let req = ServiceRequest()
+                        return try req.parameters.require("slug")
+                    }
+                    return try loader()
+                }
+            
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.ResponseEncodable {
                         let loader = {
                             let req = ServiceRequest()
                             return try req.parameters.require("slug")
@@ -208,7 +342,7 @@ struct RouterMacroDiagnosticTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.GET.test/:id", method: "GET", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.get.test/:id", method: "get", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -304,12 +438,16 @@ struct RouterMacroDiagnosticTests {
         } expansion: {
             """
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
+                #Get("test/:id") { req in
+                    let slug = try req.parameters.require("slug")
+                    return slug
+                }
+            
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.ResponseEncodable {
                         let slug = try req.parameters.require("slug")
                         return slug
                 }
@@ -326,7 +464,7 @@ struct RouterMacroDiagnosticTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.GET.test/:id", method: "GET", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.get.test/:id", method: "get", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -391,12 +529,17 @@ struct RouterMacroDiagnosticTests {
         } expansion: {
             """
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
+                #Get("test/:id") { req in
+                    let key = "id"
+                    let id = req.parameters.get(key)
+                    return id
+                }
+            
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.ResponseEncodable {
                         let key = "id"
                         let id = req.parameters.get(key)
                         return id
@@ -414,7 +557,7 @@ struct RouterMacroDiagnosticTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.GET.test/:id", method: "GET", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.get.test/:id", method: "get", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -483,12 +626,18 @@ struct RouterMacroDiagnosticTests {
         } expansion: {
             """
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
+                #Get("test/:id") { req in
+                    let key = "slug"
+                    let dynamic = req.parameters.get(key)
+                    let slug = try req.parameters.require("slug")
+                    return dynamic ?? slug
+                }
+            
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.ResponseEncodable {
                         let key = "slug"
                         let dynamic = req.parameters.get(key)
                         let slug = try req.parameters.require("slug")
@@ -507,7 +656,7 @@ struct RouterMacroDiagnosticTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.GET.test/:id", method: "GET", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.get.test/:id", method: "get", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )
@@ -574,12 +723,18 @@ struct RouterMacroDiagnosticTests {
         } expansion: {
             """
             struct MyRoute {
-
-                func boot(routes: any Vapor.RoutesBuilder) throws {
-                    routes.on(.GET, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
+                #Get("test/:id") { req in
+                    let key = "slug"
+                    let slug = try req.parameters.require("slug")
+                    let dynamic = req.parameters.get(key)
+                    return dynamic ?? slug
+                }
+            
+                nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
+                    routes.on(.get, "test", ":id", use: __macro_local_12RouteHandlerfMu_)
                 }
 
-                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.AsyncResponseEncodable {
+                func __macro_local_12RouteHandlerfMu_(req: Vapor.Request) async throws -> some Vapor.ResponseEncodable {
                         let key = "slug"
                         let slug = try req.parameters.require("slug")
                         let dynamic = req.parameters.get(key)
@@ -598,7 +753,7 @@ struct RouterMacroDiagnosticTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.GET.test/:id", method: "GET", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.get.test/:id", method: "get", path: "test/:id", parameters: [], responses: [], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )

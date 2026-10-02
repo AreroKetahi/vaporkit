@@ -22,7 +22,7 @@ extension RouterMacro {
         ).joined(separator: "\n")
 
         return """
-        func boot(routes: any Vapor.RoutesBuilder) throws {
+        nonisolated(nonsending) func boot(routes: any Vapor.RoutesBuilder) async throws {
             \(raw: registrations)
         }
         """
@@ -89,7 +89,7 @@ extension RouterMacro {
         }
 
         return metadata.routers.map {
-            "try \(builder).register(collection: \($0.trimmedDescription))"
+            "try await \(builder).register(collection: \($0.trimmedDescription))"
         }
     }
 
@@ -177,7 +177,7 @@ extension RouterMacro {
             """
         case .content:
             return """
-            let \(parameter.generatedName) = \(tryKeyword) \(requestLocalName).content.decode(\(type).self)
+            let \(parameter.generatedName) = \(tryKeyword) await \(requestLocalName).content.decode(\(type).self)
             """
         case .cookie(let source):
             switch source {
@@ -195,11 +195,11 @@ extension RouterMacro {
             case .all:
                 return "let \(parameter.generatedName) = \(requestLocalName).headers"
             case .raw(let key):
-                return "let \(parameter.generatedName) = \(requestLocalName).headers[\"\(key)\"]"
+                return "let \(parameter.generatedName) = \(requestLocalName).headers[values: HTTPField.Name(\"\(key)\")!]"
             case .decoding(let key):
-                return "let \(parameter.generatedName) = \(requestLocalName).headers[\"\(key)\"].map { try? Vapor.URLEncodedFormDecoder().decode(\(headerElementType(of: parameter.type)).self, from: $0) }"
+                return "let \(parameter.generatedName) = \(requestLocalName).headers[values: HTTPField.Name(\"\(key)\")!].map { try? Vapor.URLEncodedFormDecoder().decode(\(headerElementType(of: parameter.type)).self, from: $0) }"
             case .converting(let key):
-                return "let \(parameter.generatedName) = \(requestLocalName).headers[\"\(key)\"].map { \(headerElementType(of: parameter.type))($0) }"
+                return "let \(parameter.generatedName) = \(requestLocalName).headers[values: HTTPField.Name(\"\(key)\")!].map { \(headerElementType(of: parameter.type))($0) }"
             }
         case .auth:
             if parameter.defaultValue != nil || isOptionalType(parameter.type) {
