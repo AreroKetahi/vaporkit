@@ -8,12 +8,12 @@ Move the body of the template's `configure(_:)` function into a
 ``VaporAppConfiguration`` value:
 
 ```swift
-struct ServerConfiguration: VaporAppConfiguration {
+struct AppSetup: VaporAppConfiguration {
     func configure(_ application: Application) async throws {
         application.middleware.use(FileMiddleware(
             publicDirectory: application.directory.publicDirectory
         ))
-        try routes(application)
+        try await application.register(collection: UserRoutes())
     }
 }
 ```
@@ -24,13 +24,34 @@ Then replace the template's `Entrypoint.main()` with one `@main` type:
 @main
 struct MyServer: VaporApplication {
     static let manifest = VaporAppManifest(
-        configurations: [ServerConfiguration()]
+        configurations: [AppSetup()]
     )
 }
 ```
 
-Running the executable without an explicit subcommand starts Vapor. Existing
-Vapor and ConsoleKit server arguments keep their behavior.
+Running the executable without an explicit subcommand starts Vapor. The `run`
+subcommand starts the same server explicitly:
+
+```sh
+swift run Server
+swift run Server run --environment production --hostname 0.0.0.0 --port 8080
+```
+
+`--environment` (or `-e`) is handled by the server command and accepts
+`dev`/`development`, `prod`/`production`, and `test`/`testing`. Put it before
+passthrough arguments. Remaining arguments become configuration values for
+Vapor through `CommandLineArgumentsProvider`, rather than ConsoleKit commands.
+For example, `--hostname` and `--port` configure the listening address.
+
+Without an explicit environment option, Vapor reads `vapor.env` from the
+configuration reader:
+
+```sh
+swift run Server run --vapor.env production --port 8080
+VAPOR_ENV=production swift run Server
+```
+
+When migrating from Vapor 4, remove the old `serve` command from invocations.
 
 ### Add Startup Features
 
@@ -41,7 +62,7 @@ boot and shutdown rather than configuration.
 ```swift
 static let manifest = VaporAppManifest(
     configurations: [
-        ServerConfiguration(),
+        AppSetup(),
         AutoRegisterRoutesConfiguration.default,
     ],
     lifecycleHandlers: [ServerLifecycle()]

@@ -35,7 +35,7 @@ For a closure route, provide types that aren't visible in its declaration:
 @OpenAPIRequest(body: CreateUserRequest.self)
 @OpenAPIResponse(.created, body: UserDTO.self)
 #Post("users") { request in
-    let input = try request.content.decode(CreateUserRequest.self)
+    let input = try await request.content.decode(CreateUserRequest.self)
     return try await createUser(from: input, on: request.db)
 }
 ```

@@ -13,8 +13,12 @@ capabilities you use.
 ## Requirements
 
 - Swift 6.4 or newer
-- Vapor 4.121.0 or newer
-- macOS 14 or newer, or Linux
+- Vapor 5.0.0-beta.3
+- macOS 26.2 or newer, or Linux
+
+The planned `1.x` release line supports Vapor 4; `2.x` supports Vapor 5. Use matching
+major-version tags when selecting a released package. Vapor 5 support is
+currently based on a beta release.
 
 ## Installation
 
@@ -24,10 +28,15 @@ Add VaporKit to your package:
 dependencies: [
     .package(
         url: "https://github.com/AreroKetahi/vaporkit.git",
-        branch: "main"
+        branch: "vapor-5-intergration"
     )
 ]
 ```
+
+This example uses the current Vapor 5 development branch. Once the `2.x`
+branch is published, use `branch: "2.x"`; after a release is tagged, prefer a
+matching semantic-version requirement. The `1.x` and `2.x` branches have not
+yet been created in this checkout.
 
 Then add `VaporKit` to your target:
 
@@ -96,7 +105,7 @@ struct UserRoutes {
     }
 
     #Post("users") { req -> HTTPStatus in
-        let input = try req.content.decode(CreateUser.self)
+        let input = try await req.content.decode(CreateUser.self)
         try await createUser(input, on: req.db)
         return .created
     }
@@ -197,6 +206,23 @@ struct CreateUser: Content {
 }
 ```
 
-For WebSockets, static parameter checking, migration guides, and the complete
+## Testing
+
+Use Swift Testing and Vapor's `VaporTesting` product for application tests.
+Register routes with `try await`, and consume response bodies asynchronously.
+See [Testing a Vapor Application](Sources/VaporKit/Documentation.docc/TestingAVaporApplication.md)
+for a complete example and test-target dependencies.
+
+Run the package tests locally with `swift test`. On macOS with Apple's
+`container` CLI installed, run Linux tests with a separate build directory:
+
+```sh
+CONTAINER_MEMORY=8G ./test-linux.sh --scratch-path .build-linux
+```
+
+The separate directory keeps Linux build state apart from macOS `.build`.
+
+WebSocket macros are unavailable with the current Vapor 5 beta dependency.
+For static parameter checking, migration guides, and the complete
 API reference, see the
 [documentation](https://swiftpackageindex.com/AreroKetahi/vaporkit/documentation).

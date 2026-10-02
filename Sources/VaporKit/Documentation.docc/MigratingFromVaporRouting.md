@@ -13,7 +13,7 @@ register the resulting type as a normal Vapor `RouteCollection`.
         ```swift
         // Vapor
         struct UserController: RouteCollection {
-            func boot(routes: any RoutesBuilder) throws {
+            nonisolated(nonsending) func boot(routes: any RoutesBuilder) async throws {
                 let users = routes.grouped("users")
                 users.get(":id", use: show)
             }
@@ -48,9 +48,11 @@ register the resulting type as a normal Vapor `RouteCollection`.
 | `routes.on(method, ..., use:)` | ``On(_:method:)`` or ``On(_:method:action:)``           |
 | `routes.grouped(middleware)`   | ``Middleware(_:)``                                      |
 | `routes.register(collection:)` | ``Register(_:)``                                        |
-| `routes.webSocket(...)`        | ``WebSocket(_:maxFrameSize:shouldUpgrade:didUpgrade:)`` |
 
-Use ``RouteHandler(_:method:)-xbrl`` when preserving an existing handler name
+WebSocket migration is only available on the Vapor 4 release line. The current
+Vapor 5 beta dependency does not support VaporKit's WebSocket macros.
+
+Use ``RouteHandler(_:method:)-(RouterPath?,_)`` when preserving an existing handler name
 is clearer than selecting a method-specific macro. See <doc:CreateRouter> for
 choosing between closure and method handlers.
 
@@ -69,5 +71,5 @@ dependencies; automatic registration is optional.
 ### Migration APIs
 
 - ``Router(_:)``
-- ``RouteHandler(_:method:)-xbrl``
+- ``RouteHandler(_:method:)-(RouterPath?,_)``
 - ``ForwardParameters(_:)``

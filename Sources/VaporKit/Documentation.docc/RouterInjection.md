@@ -180,12 +180,12 @@ value per cookie name.
 
 ### Header
 
-Use ``Header`` without an argument to receive the complete `HTTPHeaders`
+Use ``Header`` without an argument to receive the complete `HTTPFields`
 collection:
 
 ```swift
 @Get("inspect")
-func inspect(request: Request, @Header headers: HTTPHeaders) -> Int {
+func inspect(request: Request, @Header headers: HTTPFields) -> Int {
     headers.count
 }
 ```

@@ -20,10 +20,13 @@ public struct VaporAppManifest: Sendable {
     /// The handlers that observe the application's runtime lifecycle.
     public let lifecycleHandlers: [any LifecycleHandler]
     
+    /// The providers used after command-line passthrough configuration.
     public let configReaderManifest: VaporConfigReaderManifest
     
+    /// The server settings supplied when the application is created.
     public let serverConfiguration: ServerConfiguration
     
+    /// The service settings supplied when the application is created.
     public let serviceConfiguration: Application.ServiceConfiguration
 
     /// Creates a manifest from configuration and lifecycle stages.
@@ -32,6 +35,9 @@ public struct VaporAppManifest: Sendable {
     ///   - configurations: The configuration stages to execute in order.
     ///   - lifecycleHandlers: The lifecycle handlers to notify in order during
     ///     boot and in reverse order during shutdown.
+    ///   - configReader: The ordered configuration providers and optional reporter.
+    ///   - serverConfiguration: The initial Vapor server settings.
+    ///   - serviceConfiguration: The initial Vapor service settings.
     public init(
         configurations: [any VaporAppConfiguration] = [],
         lifecycleHandlers: [any LifecycleHandler] = [],
@@ -59,15 +65,27 @@ public struct VaporAppManifest: Sendable {
     }
 }
 
+/// Configuration sources for the application's startup reader.
+///
+/// The server command prepends its passthrough arguments to these providers.
+/// See <doc:ApplicationEntryPoint> for configuration precedence and examples.
 public struct VaporConfigReaderManifest: Sendable {
+    /// Providers queried in declaration order after command-line arguments.
     public let configProviders: [any ConfigProvider]
+    /// An optional access reporter. The default server command does not yet use it.
     public let accessReporter: (any AccessReporter)?
     
+    /// Describes configuration providers and an optional access reporter.
+    ///
+    /// - Parameters:
+    ///   - providers: Sources queried in order until a value is found.
+    ///   - accessReporter: A reporter for configuration access events.
     public init(providers: [any ConfigProvider], accessReporter: (any AccessReporter)? = nil) {
         self.configProviders = providers
         self.accessReporter = accessReporter
     }
     
+    /// Reads environment variables after command-line passthrough arguments.
     public static let `default` = VaporConfigReaderManifest(
         providers: [
             EnvironmentVariablesProvider(),
@@ -93,6 +111,6 @@ public protocol VaporAppConfiguration: Sendable {
 /// Lifecycle handling begins after every ``VaporAppConfiguration`` completes
 /// successfully.
 ///
-/// - Important: In VaporKit 2.x, this type will represet to
-/// `Vapor.LifecycleHandler`.
+/// This is an alias of `Vapor.LifecycleHandler`; new code can adopt the Vapor
+/// protocol directly.
 public typealias VaporAppLifecycleHandler = LifecycleHandler

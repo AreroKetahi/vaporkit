@@ -30,8 +30,8 @@ struct SignupRequest: Content {
 Use the generated conformance through Vapor's normal validation API:
 
 ```swift
-try SignupRequest.validate(content: request)
-let signup = try request.content.decode(SignupRequest.self)
+try await SignupRequest.validate(content: request)
+let signup = try await request.content.decode(SignupRequest.self)
 ```
 
 ### Composing Rules
