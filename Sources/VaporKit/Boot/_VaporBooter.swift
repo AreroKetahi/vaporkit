@@ -22,9 +22,9 @@ struct _VaporBooter<App: VaporApplication>: AsyncParsableCommand {
     }
 
     func run() async throws {
-        let configReader = ConfigReader(providers: [
+        let configReader = try await ConfigReader(providers: [
             CommandLineArgumentsProvider(arguments: ["run"] + arguments)
-        ] + App.manifest.configReaderManifest.configProviders)
+        ] + App.manifest.configReaderManifest.configProviders())
         ConsoleLogger.bootstrapWithConfigReader(config: configReader)
 
         let env: Vapor::Environment = if let environment {

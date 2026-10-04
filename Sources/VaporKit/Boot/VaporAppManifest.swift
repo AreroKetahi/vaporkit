@@ -71,7 +71,7 @@ public struct VaporAppManifest: Sendable {
 /// See <doc:ApplicationEntryPoint> for configuration precedence and examples.
 public struct VaporConfigReaderManifest: Sendable {
     /// Providers queried in declaration order after command-line arguments.
-    public let configProviders: [any ConfigProvider]
+    public let configProviders: @Sendable () async throws -> [any ConfigProvider]
     /// An optional access reporter. The default server command does not yet use it.
     public let accessReporter: (any AccessReporter)?
     
@@ -81,6 +81,13 @@ public struct VaporConfigReaderManifest: Sendable {
     ///   - providers: Sources queried in order until a value is found.
     ///   - accessReporter: A reporter for configuration access events.
     public init(providers: [any ConfigProvider], accessReporter: (any AccessReporter)? = nil) {
+        self.configProviders = {
+            providers
+        }
+        self.accessReporter = accessReporter
+    }
+    
+    public init(providers: @Sendable @escaping () async throws -> [any ConfigProvider], accessReporter: (any AccessReporter)? = nil) {
         self.configProviders = providers
         self.accessReporter = accessReporter
     }
