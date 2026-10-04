@@ -23,5 +23,5 @@
 
 #if canImport(Logging)
 @_documentation(visibility: internal)
-@_exported import ArgumentParser
+@_exported import Logging
 #endif
