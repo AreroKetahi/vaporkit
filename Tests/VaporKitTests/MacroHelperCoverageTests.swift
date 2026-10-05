@@ -238,6 +238,56 @@ struct MacroHelperCoverageTests {
         )
     }
 
+    @Test func authorizationAttributeSelectsHeaderParser() throws {
+        let basic = try #require(
+            RouterMacro.authorizationKind(from: AttributeSyntax("@Authorization(.basic)"))
+        )
+        let bearer = try #require(
+            RouterMacro.authorizationKind(from: AttributeSyntax("@Authorization(.bearer)"))
+        )
+
+        let basicParameter = RouterMacro.InjectedParameterMetadata(
+            externalName: nil,
+            localName: "credentials",
+            type: TypeSyntax(stringLiteral: "BasicAuthorization?"),
+            defaultValue: nil,
+            generatedName: .identifier("credentials"),
+            source: .authorization(basic)
+        )
+        let bearerParameter = RouterMacro.InjectedParameterMetadata(
+            externalName: nil,
+            localName: "token",
+            type: TypeSyntax(stringLiteral: "String?"),
+            defaultValue: nil,
+            generatedName: .identifier("token"),
+            source: .authorization(bearer)
+        )
+        let requiredBearerParameter = RouterMacro.InjectedParameterMetadata(
+            externalName: nil,
+            localName: "requiredToken",
+            type: TypeSyntax(stringLiteral: "String"),
+            defaultValue: nil,
+            generatedName: .identifier("requiredToken"),
+            source: .authorization(bearer)
+        )
+
+        #expect(
+            RouterMacro.injectedParameterExtraction(basicParameter, requestLocalName: "req")
+            == "let credentials = req.headers.basicAuthorization"
+        )
+        #expect(
+            RouterMacro.injectedParameterExtraction(bearerParameter, requestLocalName: "req")
+            == "let token = req.headers.bearerAuthorization?.token"
+        )
+        #expect(
+            RouterMacro.injectedParameterExtraction(
+                requiredBearerParameter,
+                requestLocalName: "req"
+            )
+            == "guard let requiredToken = req.headers.bearerAuthorization?.token else { throw Vapor.Abort(.unauthorized) }"
+        )
+    }
+
     @Test func routerPathParserRejectsInvalidParameterNames() {
         let dynamic = RouterMacro.parsedRouterPath(
             from: ExprSyntax(#""/users/\(key: dynamicKey)""#)

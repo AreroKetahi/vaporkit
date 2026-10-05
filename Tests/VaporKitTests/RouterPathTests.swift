@@ -34,9 +34,11 @@ struct RouterPathInterpolationFixture {
         @Header headers: HTTPHeaders,
         @Header(key: "X-Value") values: [String],
         @Header(decoding: "X-Metadata") metadata: [RequestMetadata?],
-        @Header(converting: "X-Number") numbers: [Int?]
+        @Header(converting: "X-Number") numbers: [Int?],
+        @Authorization(.basic) basic: BasicAuthorization,
+        @Authorization(.bearer) bearerToken: String
     ) -> String {
-        "\(cookies.count + headers.count + values.count + metadata.count + numbers.count + (profile == nil ? 0 : 1) + (page ?? 0))"
+        "\(cookies.count + headers.count + values.count + metadata.count + numbers.count + (profile == nil ? 0 : 1) + (page ?? 0) + basic.username.count + bearerToken.count)"
     }
 }
 
