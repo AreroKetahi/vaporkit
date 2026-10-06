@@ -213,6 +213,29 @@ extension RouterMacro {
                 continue
             }
 
+            if let authorizationAttribute = authorizationAttribute(from: parameter.attributes) {
+                guard let kind = authorizationKind(from: authorizationAttribute) else {
+                    context.diagnose(
+                        Diagnostic(
+                            node: Syntax(authorizationAttribute),
+                            message: RouteMacroDiagnostic.typedRouteAuthorizationRequiresStaticKind
+                        )
+                    )
+                    return nil
+                }
+                injectedParameters.append(
+                    InjectedParameterMetadata(
+                        externalName: externalParameterName(from: parameter),
+                        localName: localName,
+                        type: parameter.type,
+                        defaultValue: defaultValue,
+                        generatedName: generatedName,
+                        source: .authorization(kind)
+                    )
+                )
+                continue
+            }
+
             if authAttribute(from: parameter.attributes) != nil {
                 injectedParameters.append(
                     InjectedParameterMetadata(
