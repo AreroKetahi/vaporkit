@@ -239,6 +239,62 @@ public struct Header<Value> {
     }
 }
 
+// MARK: - Authorization
+
+/// The authorization scheme read by ``Authorization``.
+public enum AuthorizationKind: Sendable {
+    /// HTTP Basic credentials.
+    case basic
+
+    /// A bearer token.
+    case bearer
+}
+
+/// Marks a typed handler parameter as authorization information read directly
+/// from the request's `Authorization` header.
+///
+/// Use `.basic` with `BasicAuthorization` and `.bearer` with `String`. Optional
+/// wrapped values produce `nil` for invalid, mismatched, or absent headers;
+/// non-optional values throw `Abort(.unauthorized)`. Unlike ``Auth``, this
+/// wrapper does not depend on authentication middleware or `Request.auth`.
+@propertyWrapper
+public struct Authorization<Value> {
+    /// The parsed authorization value injected by the generated route handler.
+    public let wrappedValue: Value
+
+    /// Creates a marker for HTTP Basic credentials.
+    public init(
+        wrappedValue: Value,
+        _ kind: AuthorizationKind
+    ) where Value == BasicAuthorization? {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates a marker for required HTTP Basic credentials.
+    public init(
+        wrappedValue: Value,
+        _ kind: AuthorizationKind
+    ) where Value == BasicAuthorization {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates a marker for a bearer token string.
+    public init(
+        wrappedValue: Value,
+        _ kind: AuthorizationKind
+    ) where Value == String? {
+        self.wrappedValue = wrappedValue
+    }
+
+    /// Creates a marker for a required bearer token string.
+    public init(
+        wrappedValue: Value,
+        _ kind: AuthorizationKind
+    ) where Value == String {
+        self.wrappedValue = wrappedValue
+    }
+}
+
 // MARK: - Advanced Part
 
 /// Marks a typed handler function parameter as an authenticated Vapor user.

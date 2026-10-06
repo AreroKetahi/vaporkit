@@ -82,7 +82,7 @@ struct UserRoutes {
 ```
 
 VaporKit supports `@Path`, `@Query`, `@ContentBody`, `@Cookie`,
-`@Header`, and `@Auth` injection.
+`@Header`, `@Authorization`, and `@Auth` injection.
 
 For short handlers, the convenient freestanding route macros keep the route
 inline:

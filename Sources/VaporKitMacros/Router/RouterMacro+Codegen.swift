@@ -201,6 +201,20 @@ extension RouterMacro {
             case .converting(let key):
                 return "let \(parameter.generatedName) = \(requestLocalName).headers[\"\(key)\"].map { \(headerElementType(of: parameter.type))($0) }"
             }
+        case .authorization(let kind):
+            let value: String
+            switch kind {
+            case .basic:
+                value = "\(requestLocalName).headers.basicAuthorization"
+            case .bearer:
+                value = "\(requestLocalName).headers.bearerAuthorization?.token"
+            }
+
+            if isOptionalType(parameter.type) {
+                return "let \(parameter.generatedName) = \(value)"
+            }
+
+            return "guard let \(parameter.generatedName) = \(value) else { throw Vapor.Abort(.unauthorized) }"
         case .auth:
             if parameter.defaultValue != nil || isOptionalType(parameter.type) {
                 return """

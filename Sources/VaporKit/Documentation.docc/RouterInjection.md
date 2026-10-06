@@ -220,6 +220,40 @@ func retries(
 Each header value produces one array element. A failed conversion becomes
 `nil` at the same position without discarding the other values.
 
+### Authorization
+
+Use ``Authorization`` to parse authentication information directly from the
+request's `Authorization` header:
+
+```swift
+@Get("session")
+func session(
+    request: Request,
+    @Authorization(.bearer) token: String?
+) -> String? {
+    token
+}
+```
+
+Choose `.basic` for `BasicAuthorization?` or `.bearer` for a `String?` token.
+A missing, malformed, or differently scoped header produces `nil`. This does
+not run authentication middleware or read `Request.auth`; use ``Auth`` when
+the route needs an authenticated model.
+
+Use the corresponding non-optional type when authorization is required. A
+missing or invalid value then throws `Abort(.unauthorized)` before the handler
+runs:
+
+```swift
+@Get("session")
+func session(
+    request: Request,
+    @Authorization(.bearer) token: String
+) -> String {
+    token
+}
+```
+
 ### Auth
 
 Use ``Auth`` for a value previously attached by Vapor authentication

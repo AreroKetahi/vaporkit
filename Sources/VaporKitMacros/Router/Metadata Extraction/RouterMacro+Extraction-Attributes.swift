@@ -73,6 +73,10 @@ extension RouterMacro {
         injectionAttribute(named: typedHeaderAttributeName, from: attributes)
     }
 
+    static func authorizationAttribute(from attributes: AttributeListSyntax) -> AttributeSyntax? {
+        injectionAttribute(named: typedAuthorizationAttributeName, from: attributes)
+    }
+
     private static func injectionAttribute(
         named name: String,
         from attributes: AttributeListSyntax
@@ -97,6 +101,23 @@ extension RouterMacro {
         case "key": return .raw(key: key)
         case "decoding": return .decoding(key: key)
         case "converting": return .converting(key: key)
+        default: return nil
+        }
+    }
+
+    static func authorizationKind(from attribute: AttributeSyntax) -> AuthorizationKind? {
+        guard case .argumentList(let arguments) = attribute.arguments,
+            arguments.count == 1,
+            let argument = arguments.first,
+            argument.label == nil,
+            let member = argument.expression.as(MemberAccessExprSyntax.self)
+        else {
+            return nil
+        }
+
+        switch member.declName.baseName.text {
+        case "basic": return .basic
+        case "bearer": return .bearer
         default: return nil
         }
     }
