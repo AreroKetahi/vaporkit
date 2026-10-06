@@ -14,17 +14,29 @@ public struct _OpenAPIParameterDescriptor: Sendable {
     public let location: String
     public let schema: any OpenAPISchema.Type
     public let required: Bool
+    public let description: String?
+    public let deprecated: Bool
+    public let allowEmptyValue: Bool
+    public let schemaModifiers: [OpenAPISchemaModifier]
 
     public init<S: OpenAPISchema>(
         name: String,
         location: String,
         schema: S.Type,
-        required: Bool
+        required: Bool,
+        description: String? = nil,
+        deprecated: Bool = false,
+        allowEmptyValue: Bool = false,
+        schemaModifiers: [OpenAPISchemaModifier] = []
     ) {
         self.name = name
         self.location = location
         self.schema = S.self
         self.required = required
+        self.description = description
+        self.deprecated = deprecated
+        self.allowEmptyValue = allowEmptyValue
+        self.schemaModifiers = schemaModifiers
     }
 }
 

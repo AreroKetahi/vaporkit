@@ -49,10 +49,48 @@ conformance with `OpenAPISchema()`.
 @OpenAPISchema
 struct UserDTO: Content {
     var id: UUID
+    @OpenAPIProperty(.description("Display name"), .minLength(1))
     var name: String
+
+    @OpenAPIProperty(.format(.email), .maxLength(254))
+    var email: String
+
+    @OpenAPIProperty(.writeOnly, .minLength(8))
+    var password: String?
     var nickname: String?
 }
 ```
+
+The Swift property type determines the OpenAPI `type`, nullability, and whether
+the property is required. ``OpenAPIProperty(_:)`` only adds schema annotations
+and constraints; it cannot replace the inferred type.
+
+Available modifiers include `format`, `description`, `deprecated`, `readOnly`,
+`writeOnly`, `minLength`, `maxLength`, and `pattern(regex:)`.
+
+### Describing Parameters
+
+Use ``OpenAPIParameter`` together with a parameter-source wrapper when an
+inferred path, query, header, or cookie parameter needs additional metadata:
+
+```swift
+func search(
+    request: Request,
+    @OpenAPIParameter(
+        description: "Search keywords",
+        schema: .minLength(2), .maxLength(100)
+    )
+    @Query query: String
+) async throws -> [UserDTO] {
+    try await searchUsers(query, on: request.db)
+}
+```
+
+The source wrapper still determines the parameter location and decodes the
+value. The Swift type determines its schema type and required state.
+`OpenAPIParameter` adds parameter-level `description`, `deprecated`, and
+query-only `allowEmptyValue`, while `schema` accepts the same
+``OpenAPISchemaModifier`` values used by ``OpenAPIProperty(_:)``.
 
 ### Exporting a Document
 
@@ -77,6 +115,12 @@ swift run MyServer extract-openapi \
 
 - `OpenAPISchema()`
 - `OpenAPISchema`
+- `OpenAPIProperty(_:)`
+- `OpenAPISchemaModifier`
+
+### Parameters
+
+- `OpenAPIParameter`
 
 ## Topics
 

@@ -55,10 +55,16 @@ Types used by parameters, bodies, and responses must conform to
 @OpenAPISchema
 struct UserDTO: Content {
     var id: UUID
+    @OpenAPIProperty(.description("Display name"), .minLength(1))
     var name: String
     var nickname: String?
 }
 ```
+
+Add ``OpenAPIParameter`` beside `Query`, `Path`, `Header`, or `Cookie` when a
+request parameter needs a description, deprecation state, or schema
+constraints. See <doc:OpenAPIOverview> for examples and the distinction between
+inferred types and schema modifiers.
 
 See <doc:OpenAPIOverview> for all metadata, schema, and document-generation
 APIs. See <doc:UsingParameterInFunction> for how typed request values are
@@ -71,3 +77,5 @@ inferred from handler signatures.
 - `OpenAPIResponse(_:body:description:)`
 - `OpenAPIIgnored()`
 - `OpenAPISchema()`
+- `OpenAPIProperty(_:)`
+- `OpenAPIParameter`

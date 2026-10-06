@@ -206,6 +206,11 @@ struct RouterMacroTypedHandlerTests {
                     req: Request,
                     @Path id: UUID,
                     @Query input: SearchQuery,
+                    @OpenAPIParameter(
+                        description: "Project name",
+                        deprecated: true,
+                        schema: .minLength(2), .maxLength(100)
+                    )
                     @Query("filter.name") name: String,
                     @Query("page/number") page: Int
                 ) async throws -> [ProjectDTO] {
@@ -220,6 +225,11 @@ struct RouterMacroTypedHandlerTests {
                     req: Request,
                     @Path id: UUID,
                     @Query input: SearchQuery,
+                    @OpenAPIParameter(
+                        description: "Project name",
+                        deprecated: true,
+                        schema: .minLength(2), .maxLength(100)
+                    )
                     @Query("filter.name") name: String,
                     @Query("page/number") page: Int
                 ) async throws -> [ProjectDTO] {
@@ -250,7 +260,7 @@ struct RouterMacroTypedHandlerTests {
                     to: VaporKit._OpenAPIRouterDescriptor(
                         identifier: "MyRoute",
                         path: "api",
-                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.search", method: "GET", path: "projects/:id/search", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "input", location: "query", schema: (SearchQuery).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "filter.name", location: "query", schema: (String).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "page.number", location: "query", schema: (Int).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: [ProjectDTO].self)], operationID: nil, summary: nil, description: nil, tags: [])],
+                        handlers: [VaporKit._OpenAPIHandlerDescriptor(identifier: "MyRoute.search", method: "GET", path: "projects/:id/search", parameters: [VaporKit._OpenAPIParameterDescriptor(name: "id", location: "path", schema: (UUID).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "input", location: "query", schema: (SearchQuery).self, required: true), VaporKit._OpenAPIParameterDescriptor(name: "filter.name", location: "query", schema: (String).self, required: true, description: "Project name", deprecated: true, allowEmptyValue: false, schemaModifiers: [.minLength(2), .maxLength(100)]), VaporKit._OpenAPIParameterDescriptor(name: "page.number", location: "query", schema: (Int).self, required: true)], responses: [VaporKit._OpenAPIResponseDescriptor(status: .ok, body: [ProjectDTO].self)], operationID: nil, summary: nil, description: nil, tags: [])],
                         registeredRouters: []
                     )
                 )

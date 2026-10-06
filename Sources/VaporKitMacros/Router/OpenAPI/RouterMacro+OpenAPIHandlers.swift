@@ -56,7 +56,8 @@ extension RouterMacro {
                 let parameters = openAPIParameters(
                     from: function,
                     in: declaration,
-                    routerIdentifier: routerIdentifier
+                    routerIdentifier: routerIdentifier,
+                    context: context
                 )
                 let requestBody = openAPIRequestBody(
                     from: function,

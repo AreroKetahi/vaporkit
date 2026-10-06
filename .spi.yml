@@ -1,4 +1,6 @@
 version: 1
 builder:
   configs:
-    - documentation_targets: [VaporKit]
+    - documentation_targets:
+        - VaporKit
+        - VaporKitOpenAPI

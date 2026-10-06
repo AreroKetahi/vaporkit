@@ -25,6 +25,20 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     }
     /// An optional format refining ``type``, such as `uuid` or `int64`.
     public var format: OpenAPISchemaFormat?
+    /// A human-readable explanation of the schema.
+    public var description: String?
+    /// Whether consumers should stop using this property.
+    public var deprecated: Bool?
+    /// Whether the property may appear only in responses.
+    public var readOnly: Bool?
+    /// Whether the property may appear only in requests.
+    public var writeOnly: Bool?
+    /// The minimum number of Unicode code points accepted by a string.
+    public var minLength: Int?
+    /// The maximum number of Unicode code points accepted by a string.
+    public var maxLength: Int?
+    /// The regular expression a string must match.
+    public var pattern: String?
     /// A JSON Reference to another schema.
     public var reference: String?
     /// The element schema when ``type`` is `array`.
@@ -42,6 +56,13 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     /// - Parameters:
     ///   - type: The JSON value type.
     ///   - format: An optional type format.
+    ///   - description: A human-readable explanation of the schema.
+    ///   - deprecated: Whether consumers should stop using the property.
+    ///   - readOnly: Whether the property may appear only in responses.
+    ///   - writeOnly: Whether the property may appear only in requests.
+    ///   - minLength: The minimum accepted string length.
+    ///   - maxLength: The maximum accepted string length.
+    ///   - pattern: The regular expression a string must match.
     ///   - reference: A JSON Reference to another schema.
     ///   - items: The element schema for an array.
     ///   - properties: Named schema types for object properties.
@@ -51,6 +72,13 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     public init(
         type: OpenAPISchemaType? = nil,
         format: OpenAPISchemaFormat? = nil,
+        description: String? = nil,
+        deprecated: Bool? = nil,
+        readOnly: Bool? = nil,
+        writeOnly: Bool? = nil,
+        minLength: Int? = nil,
+        maxLength: Int? = nil,
+        pattern: String? = nil,
         reference: String? = nil,
         items: OpenAPISchemaMetadata? = nil,
         properties: [String: any OpenAPISchema.Type]? = nil,
@@ -60,6 +88,13 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     ) {
         self.types = type.map { [$0] }
         self.format = format
+        self.description = description
+        self.deprecated = deprecated
+        self.readOnly = readOnly
+        self.writeOnly = writeOnly
+        self.minLength = minLength
+        self.maxLength = maxLength
+        self.pattern = pattern
         self.reference = reference
         self.items = items.map(OpenAPISchemaItems.init)
         self.properties = properties?.mapValues { $0.openAPISchema }
@@ -69,7 +104,9 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case type, format, items, properties, additionalProperties, anyOf, required
+        case type, format, description, deprecated, readOnly, writeOnly
+        case minLength, maxLength, pattern
+        case items, properties, additionalProperties, anyOf, required
         case reference = "$ref"
     }
 
@@ -81,6 +118,13 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
             types = try container.decodeIfPresent([OpenAPISchemaType].self, forKey: .type)
         }
         format = try container.decodeIfPresent(OpenAPISchemaFormat.self, forKey: .format)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        deprecated = try container.decodeIfPresent(Bool.self, forKey: .deprecated)
+        readOnly = try container.decodeIfPresent(Bool.self, forKey: .readOnly)
+        writeOnly = try container.decodeIfPresent(Bool.self, forKey: .writeOnly)
+        minLength = try container.decodeIfPresent(Int.self, forKey: .minLength)
+        maxLength = try container.decodeIfPresent(Int.self, forKey: .maxLength)
+        pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
         reference = try container.decodeIfPresent(String.self, forKey: .reference)
         items = try container.decodeIfPresent(OpenAPISchemaItems.self, forKey: .items)
         properties = try container.decodeIfPresent(
@@ -103,12 +147,39 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
             try container.encodeIfPresent(types, forKey: .type)
         }
         try container.encodeIfPresent(format, forKey: .format)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(deprecated, forKey: .deprecated)
+        try container.encodeIfPresent(readOnly, forKey: .readOnly)
+        try container.encodeIfPresent(writeOnly, forKey: .writeOnly)
+        try container.encodeIfPresent(minLength, forKey: .minLength)
+        try container.encodeIfPresent(maxLength, forKey: .maxLength)
+        try container.encodeIfPresent(pattern, forKey: .pattern)
         try container.encodeIfPresent(reference, forKey: .reference)
         try container.encodeIfPresent(items, forKey: .items)
         try container.encodeIfPresent(properties, forKey: .properties)
         try container.encodeIfPresent(additionalProperties, forKey: .additionalProperties)
         try container.encodeIfPresent(anyOf, forKey: .anyOf)
         try container.encodeIfPresent(required, forKey: .required)
+    }
+}
+
+extension OpenAPISchemaMetadata {
+    /// Applies annotations and constraints without replacing the inferred type.
+    public func applying(_ modifiers: [OpenAPISchemaModifier]) -> Self {
+        var schema = self
+        for modifier in modifiers {
+            switch modifier {
+            case .format(let format): schema.format = format
+            case .description(let description): schema.description = description
+            case .deprecated: schema.deprecated = true
+            case .readOnly: schema.readOnly = true
+            case .writeOnly: schema.writeOnly = true
+            case .minLength(let length): schema.minLength = length
+            case .maxLength(let length): schema.maxLength = length
+            case .pattern(let regex): schema.pattern = regex
+            }
+        }
+        return schema
     }
 }
 

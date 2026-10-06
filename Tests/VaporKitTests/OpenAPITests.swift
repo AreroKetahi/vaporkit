@@ -10,6 +10,25 @@ private struct OpenAPITestDTO {
     var scores: [Int]
 }
 
+@OpenAPISchema
+private struct DocumentedOpenAPITestDTO {
+    @OpenAPIProperty(
+        .format(.email),
+        .description("Account email"),
+        .maxLength(254),
+        .readOnly
+    )
+    var email: String
+
+    @OpenAPIProperty(
+        .description("Account password"),
+        .minLength(8),
+        .pattern(regex: #"^[^\s]+$"#),
+        .writeOnly
+    )
+    var password: String?
+}
+
 @Suite struct OpenAPITests {
     @Test func schemaMacroGeneratesPropertiesAndRequiredNames() throws {
         let schema = OpenAPITestDTO.openAPISchema
@@ -18,6 +37,82 @@ private struct OpenAPITestDTO {
         #expect(schema.properties?["nickname"]?.types == [.string, .null])
         #expect(schema.properties?["scores"]?.items?.schema.type == .integer)
         #expect(schema.required == ["id", "scores"])
+    }
+
+    @Test func propertyAttributesRefineInferredSchemas() throws {
+        let schema = DocumentedOpenAPITestDTO.openAPISchema
+        let email = try #require(schema.properties?["email"])
+        #expect(email.type == .string)
+        #expect(email.format == .email)
+        #expect(email.description == "Account email")
+        #expect(email.maxLength == 254)
+        #expect(email.readOnly == true)
+
+        let password = try #require(schema.properties?["password"])
+        #expect(password.types == [.string, .null])
+        #expect(password.description == "Account password")
+        #expect(password.minLength == 8)
+        #expect(password.pattern == #"^[^\s]+$"#)
+        #expect(password.writeOnly == true)
+        #expect(schema.required == ["email"])
+
+        let data = try JSONEncoder().encode(schema)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let properties = try #require(object["properties"] as? [String: Any])
+        let encodedEmail = try #require(properties["email"] as? [String: Any])
+        #expect(encodedEmail["format"] as? String == "email")
+        #expect(encodedEmail["readOnly"] as? Bool == true)
+        #expect(encodedEmail["writeOnly"] == nil)
+    }
+
+    @Test func parameterMetadataRefinesItsInferredSchema() throws {
+        func passthrough(
+            @OpenAPIParameter(
+                description: "Search term",
+                schema: .minLength(2), .maxLength(100)
+            )
+            @Query value: String
+        ) -> String {
+            value
+        }
+        #expect(passthrough(value: "ok") == "ok")
+
+        let router = _OpenAPIRouterDescriptor(
+            identifier: "Search",
+            path: "search",
+            handlers: [
+                .init(
+                    identifier: "Search.index",
+                    method: "GET",
+                    path: "",
+                    parameters: [
+                        .init(
+                            name: "query",
+                            location: "query",
+                            schema: String.self,
+                            required: true,
+                            description: "Search term",
+                            deprecated: true,
+                            allowEmptyValue: true,
+                            schemaModifiers: [.minLength(2), .maxLength(100)]
+                        )
+                    ]
+                )
+            ],
+            registeredRouters: []
+        )
+        let document = try OpenAPIDocumentBuilder().build(
+            title: "Search",
+            version: "1",
+            descriptors: [router]
+        )
+        let parameter = try #require(document.paths["/search"]?["get"]?.parameters?.first)
+        #expect(parameter.description == "Search term")
+        #expect(parameter.deprecated == true)
+        #expect(parameter.allowEmptyValue == true)
+        #expect(parameter.schema.type == .string)
+        #expect(parameter.schema.minLength == 2)
+        #expect(parameter.schema.maxLength == 100)
     }
 
     @Test func optionalSchemaEncodesAnOpenAPI31TypeUnion() throws {
@@ -134,11 +229,18 @@ private struct OpenAPITestDTO {
             descriptors: [router]
         )
         let operation = try #require(document.paths["/users"]?["post"])
-        #expect(operation.parameters?.first?.schema.type == .object)
+        #expect(
+            operation.parameters?.first?.schema.reference
+                == "#/components/schemas/OpenAPITestDTO"
+        )
         #expect(operation.requestBody?.required == true)
         #expect(
-            operation.requestBody?.content["application/json"]?.schema.type == .object
+            operation.requestBody?.content["application/json"]?.schema.reference
+                == "#/components/schemas/OpenAPITestDTO"
         )
+        #expect(operation.responses["201"]?.content?["application/json"]?.schema.reference
+            == "#/components/schemas/OpenAPITestDTO")
+        #expect(document.components?.schemas["OpenAPITestDTO"] == OpenAPITestDTO.openAPISchema)
     }
 
     @Test func oneRouterCanBeExpandedUnderMultipleParents() throws {

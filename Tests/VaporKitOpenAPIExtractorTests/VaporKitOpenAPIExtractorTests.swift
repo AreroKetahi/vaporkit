@@ -29,17 +29,31 @@ import VaporKit
         #expect(publicUser.summary == "Get a fixture user")
         #expect(publicUser.tags == ["Users"])
         #expect(publicUser.parameters?.map(\.name) == ["id", "include.profile", "filter"])
-        #expect(publicUser.parameters?.last?.schema.type == .object)
-        #expect(publicUser.responses["200"]?.content?["application/json"]?.schema.type == .object)
+        let includeProfile = try #require(
+            publicUser.parameters?.first { $0.name == "include.profile" }
+        )
+        #expect(includeProfile.description == "Include the full profile")
+        #expect(includeProfile.schema.description == "Boolean profile switch")
+        #expect(publicUser.parameters?.last?.schema.reference
+            == "#/components/schemas/FixtureFilter")
+        #expect(publicUser.responses["200"]?.content?["application/json"]?.schema.reference
+            == "#/components/schemas/FixtureUser")
         #expect(document.paths["/api/admin/users/{id}"]?["get"] != nil)
         #expect(
             document.paths["/api/v1/users"]?["post"]?
-                .responses["201"]?.content?["application/json"]?.schema.type == .object
+                .responses["201"]?.content?["application/json"]?.schema.reference
+                    == "#/components/schemas/FixtureUser"
         )
         #expect(
             document.paths["/api/v1/users"]?["post"]?
-                .requestBody?.content["application/json"]?.schema.type == .object
+                .requestBody?.content["application/json"]?.schema.reference
+                    == "#/components/schemas/CreateFixtureUser"
         )
+        #expect(document.components?.schemas.keys.sorted()
+            == ["CreateFixtureUser", "FixtureFilter", "FixtureUser"])
+        #expect(document.components?.schemas["FixtureUser"]?.properties?["name"]?.description
+            == "Display name")
+        #expect(document.components?.schemas["FixtureUser"]?.properties?["name"]?.minLength == 1)
         #expect(
             document.paths["/api/health"]?["get"]?
                 .responses["200"]?.content?["application/json"]?.schema.type == .string
@@ -257,6 +271,7 @@ private struct DynamicOpenAPIFixture {
     @OpenAPISchema
     struct FixtureUser: Content {
         var id: UUID
+        @OpenAPIProperty(.description("Display name"), .minLength(1))
         var name: String
         var nickname: String?
         var scores: [Int]
@@ -285,6 +300,10 @@ private struct DynamicOpenAPIFixture {
         func user(
             _ request: Request,
             @Path id: UUID,
+            @OpenAPIParameter(
+                description: "Include the full profile",
+                schema: .description("Boolean profile switch")
+            )
             @Query("include.profile") includeProfile: Bool?,
             @Query filter: FixtureFilter
         ) async throws -> FixtureUser {
