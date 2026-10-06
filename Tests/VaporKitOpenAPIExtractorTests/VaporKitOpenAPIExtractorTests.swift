@@ -49,6 +49,28 @@ import VaporKit
                 .requestBody?.required == false
         )
         #expect(document.paths["/api/v1/users/internal"] == nil)
+
+        try FileManager.default.removeItem(at: fixture.outputURL)
+        let inlineResult = try fixture.run(serverURL, arguments: [
+            "extract-openapi",
+            "--title", "Inline API",
+            "--inline",
+        ])
+        #expect(inlineResult.status == 0, Comment(rawValue: inlineResult.output))
+        #expect(!FileManager.default.fileExists(atPath: fixture.outputURL.path))
+        let inlineDocument = try JSONDecoder().decode(
+            OpenAPIDocument.self,
+            from: Data(inlineResult.output.utf8)
+        )
+        #expect(inlineDocument.info.title == "Inline API")
+
+        let conflictingResult = try fixture.run(serverURL, arguments: [
+            "extract-openapi",
+            "--inline",
+            "--output", fixture.outputURL.path,
+        ])
+        #expect(conflictingResult.status != 0)
+        #expect(conflictingResult.output.contains("Specify exactly one"))
     }
 }
 
