@@ -34,7 +34,7 @@ private struct ConfiguredVaporApplicationFixture: VaporApplication {
 
     @Test func recognizesHiddenOpenAPICommand() throws {
         let command = try VaporApplicationFixture.parseAsRoot([
-            "extract-openapi", "--title", "Test API",
+            "extract-openapi", "--title", "Test API", "--inline",
         ])
         #expect(command is _VaporOpenAPIExtractor<VaporApplicationFixture>)
     }
