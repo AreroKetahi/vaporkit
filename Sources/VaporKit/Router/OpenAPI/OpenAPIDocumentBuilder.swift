@@ -37,6 +37,7 @@ public struct OpenAPIDocumentBuilder: Sendable {
         let children = Set(descriptors.flatMap(\.registeredRouters))
         let roots = descriptors.map(\.identifier).filter { !children.contains($0) }.sorted()
         var paths: [String: [String: OpenAPIDocument.Operation]] = [:]
+        var schemas: [String: OpenAPISchemaMetadata] = [:]
 
         for root in roots {
             try visit(
@@ -44,19 +45,28 @@ public struct OpenAPIDocumentBuilder: Sendable {
                 inheritedPath: [],
                 stack: [],
                 routers: routers,
-                paths: &paths
+                paths: &paths,
+                schemas: &schemas
             )
         }
 
         // A graph with descriptors but no roots necessarily contains a cycle.
         if !descriptors.isEmpty, roots.isEmpty {
             let first = descriptors[0].identifier
-            try visit(first, inheritedPath: [], stack: [], routers: routers, paths: &paths)
+            try visit(
+                first,
+                inheritedPath: [],
+                stack: [],
+                routers: routers,
+                paths: &paths,
+                schemas: &schemas
+            )
         }
 
         return OpenAPIDocument(
             info: .init(title: title, version: version),
-            paths: paths
+            paths: paths,
+            components: schemas.isEmpty ? nil : .init(schemas: schemas)
         )
     }
 
@@ -65,7 +75,8 @@ public struct OpenAPIDocumentBuilder: Sendable {
         inheritedPath: [String],
         stack: [String],
         routers: [String: _OpenAPIRouterDescriptor],
-        paths: inout [String: [String: OpenAPIDocument.Operation]]
+        paths: inout [String: [String: OpenAPIDocument.Operation]],
+        schemas: inout [String: OpenAPISchemaMetadata]
     ) throws {
         guard let router = routers[identifier] else {
             throw OpenAPIDocumentBuilderError.missingRouter(
@@ -92,14 +103,20 @@ public struct OpenAPIDocumentBuilder: Sendable {
                     name: parameter.name,
                     in: parameter.location,
                     required: parameter.location == "path" || parameter.required,
-                    schema: parameter.schema.openAPISchema
+                    description: parameter.description,
+                    deprecated: parameter.deprecated ? true : nil,
+                    allowEmptyValue: parameter.allowEmptyValue ? true : nil,
+                    schema: referencedSchema(parameter.schema, schemas: &schemas)
+                        .applying(parameter.schemaModifiers)
                 )
             }
             let requestBody = handler.requestBody.map { request in
                 OpenAPIDocument.RequestBody(
                     required: request.required,
                     content: [
-                        request.contentType: .init(schema: request.body.openAPISchema)
+                        request.contentType: .init(
+                            schema: referencedSchema(request.body, schemas: &schemas)
+                        )
                     ]
                 )
             }
@@ -117,7 +134,7 @@ public struct OpenAPIDocumentBuilder: Sendable {
                     description: response.description,
                     content: response.hasBody ? [
                         "application/json": .init(
-                            schema: response.body.openAPISchema
+                            schema: referencedSchema(response.body, schemas: &schemas)
                         )
                     ] : nil
                 )
@@ -146,9 +163,21 @@ public struct OpenAPIDocumentBuilder: Sendable {
                 inheritedPath: routerPath,
                 stack: stack + [identifier],
                 routers: routers,
-                paths: &paths
+                paths: &paths,
+                schemas: &schemas
             )
         }
+    }
+
+    private func referencedSchema(
+        _ type: any OpenAPISchema.Type,
+        schemas: inout [String: OpenAPISchemaMetadata]
+    ) -> OpenAPISchemaMetadata {
+        guard let name = type.openAPISchemaName else { return type.openAPISchema }
+        schemas[name] = type.openAPISchema
+        let escapedName = name.replacingOccurrences(of: "~", with: "~0")
+            .replacingOccurrences(of: "/", with: "~1")
+        return OpenAPISchemaMetadata(reference: "#/components/schemas/\(escapedName)")
     }
 
     private func pathSegments(_ path: String) -> [String] {

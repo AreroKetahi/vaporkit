@@ -10,6 +10,16 @@ import Foundation
 /// An OpenAPI 3.1 document generated from VaporKit router metadata.
 @_documentation(visibility: internal)
 public struct OpenAPIDocument: Codable, Sendable {
+    /// Reusable OpenAPI definitions.
+    public struct Components: Codable, Sendable {
+        /// Schemas referenced from operations through `$ref`.
+        public var schemas: [String: OpenAPISchemaMetadata]
+
+        public init(schemas: [String: OpenAPISchemaMetadata]) {
+            self.schemas = schemas
+        }
+    }
+
     /// General information about the described API.
     public struct Info: Codable, Sendable {
         /// The human-readable API title.
@@ -58,6 +68,12 @@ public struct OpenAPIDocument: Codable, Sendable {
         public var `in`: String
         /// Whether callers must provide the parameter.
         public var required: Bool
+        /// A human-readable explanation of the parameter.
+        public var description: String?
+        /// Whether consumers should stop using the parameter.
+        public var deprecated: Bool?
+        /// Whether an empty value is valid for this query parameter.
+        public var allowEmptyValue: Bool?
         /// The parameter value schema.
         public var schema: OpenAPISchemaMetadata
     }
@@ -82,11 +98,18 @@ public struct OpenAPIDocument: Codable, Sendable {
     public var info: Info
     /// Operations grouped first by path and then by lowercase HTTP method.
     public var paths: [String: [String: Operation]]
+    /// Reusable definitions referenced by operations.
+    public var components: Components?
 
     /// Creates an OpenAPI 3.1 document.
-    public init(info: Info, paths: [String: [String: Operation]]) {
+    public init(
+        info: Info,
+        paths: [String: [String: Operation]],
+        components: Components? = nil
+    ) {
         self.openapi = "3.1.0"
         self.info = info
         self.paths = paths
+        self.components = components
     }
 }

@@ -50,6 +50,22 @@ public struct OpenAPISchemaFormat: RawRepresentable, Codable, Hashable, Sendable
 
     /// The UUID string format.
     public static let uuid = Self(rawValue: "uuid")
+    /// An email address string.
+    public static let email = Self(rawValue: "email")
+    /// A URI string.
+    public static let uri = Self(rawValue: "uri")
+    /// A host name string.
+    public static let hostname = Self(rawValue: "hostname")
+    /// An IPv4 address string.
+    public static let ipv4 = Self(rawValue: "ipv4")
+    /// An IPv6 address string.
+    public static let ipv6 = Self(rawValue: "ipv6")
+    /// An RFC 3339 full-date string.
+    public static let date = Self(rawValue: "date")
+    /// An RFC 3339 full-time string.
+    public static let time = Self(rawValue: "time")
+    /// A password string whose value should be obscured by tooling.
+    public static let password = Self(rawValue: "password")
     /// The RFC 3339 date-time string format.
     public static let dateTime = Self(rawValue: "date-time")
     /// A signed 32-bit integer format.

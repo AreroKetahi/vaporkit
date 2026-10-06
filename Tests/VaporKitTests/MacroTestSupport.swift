@@ -28,6 +28,7 @@ let testMacros: [String: Macro.Type] = [
     "OpenAPIRequest": EmptyMacro.self,
     "OpenAPIIgnored": EmptyMacro.self,
     "OpenAPISchema": OpenAPISchemaMacro.self,
+    "OpenAPIProperty": EmptyMacro.self,
     "Constraint": EmptyMacro.self,
     "Attribute": EmptyMacro.self,
     "Relationship": EmptyMacro.self,
