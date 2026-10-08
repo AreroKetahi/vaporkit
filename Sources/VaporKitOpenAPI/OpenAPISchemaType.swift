@@ -76,4 +76,35 @@ public struct OpenAPISchemaFormat: RawRepresentable, Codable, Hashable, Sendable
     public static let float = Self(rawValue: "float")
     /// A double-precision floating-point format.
     public static let double = Self(rawValue: "double")
+    /// Base64-encoded bytes.
+    public static let byte = Self(rawValue: "byte")
+}
+
+/// The encoding applied to string content in an OpenAPI schema.
+public struct OpenAPIContentEncoding: RawRepresentable, Codable, Hashable, Sendable,
+    ExpressibleByStringLiteral
+{
+    /// The encoding name written to the OpenAPI document.
+    public let rawValue: String
+
+    public init(rawValue: String) {
+        self.rawValue = rawValue
+    }
+
+    public init(stringLiteral value: String) {
+        self.init(rawValue: value)
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.init(rawValue: try container.decode(String.self))
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    /// RFC 4648 base64 encoding.
+    public static let base64 = Self(rawValue: "base64")
 }

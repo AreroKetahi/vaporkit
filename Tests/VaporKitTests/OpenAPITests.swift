@@ -27,6 +27,9 @@ private struct DocumentedOpenAPITestDTO {
         .writeOnly
     )
     var password: String?
+
+    @OpenAPIProperty(.contentEncoding(.base64))
+    var payload: String?
 }
 
 @Suite struct OpenAPITests {
@@ -54,6 +57,9 @@ private struct DocumentedOpenAPITestDTO {
         #expect(password.minLength == 8)
         #expect(password.pattern == #"^[^\s]+$"#)
         #expect(password.writeOnly == true)
+
+        let payload = try #require(schema.properties?["payload"])
+        #expect(payload.contentEncoding == .base64)
         #expect(schema.required == ["email"])
 
         let data = try JSONEncoder().encode(schema)
@@ -63,6 +69,8 @@ private struct DocumentedOpenAPITestDTO {
         #expect(encodedEmail["format"] as? String == "email")
         #expect(encodedEmail["readOnly"] as? Bool == true)
         #expect(encodedEmail["writeOnly"] == nil)
+        let encodedPayload = try #require(properties["payload"] as? [String: Any])
+        #expect(encodedPayload["contentEncoding"] as? String == "base64")
     }
 
     @Test func parameterMetadataRefinesItsInferredSchema() throws {

@@ -9,6 +9,8 @@
 public enum OpenAPISchemaModifier: Sendable, Hashable {
     /// Refines the representation of a value, such as `email` or `uuid`.
     case format(OpenAPISchemaFormat)
+    /// Declares how string content is encoded.
+    case contentEncoding(OpenAPIContentEncoding)
     /// Provides a human-readable explanation of the value.
     case description(String)
     /// Marks the value as deprecated.

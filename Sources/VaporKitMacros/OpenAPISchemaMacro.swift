@@ -140,7 +140,9 @@ public struct OpenAPISchemaMacro: ExtensionMacro {
               let member = call.calledExpression.as(MemberAccessExprSyntax.self),
               call.arguments.count == 1 else { return nil }
         let kind = member.declName.baseName.text
-        guard ["format", "description", "minLength", "maxLength", "pattern"].contains(kind) else {
+        guard [
+            "format", "contentEncoding", "description", "minLength", "maxLength", "pattern",
+        ].contains(kind) else {
             return nil
         }
         return SchemaModifier(kind: kind, expression: expression)

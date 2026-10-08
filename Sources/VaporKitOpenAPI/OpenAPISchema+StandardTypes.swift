@@ -43,6 +43,14 @@ extension Date: OpenAPISchema {
     public static let openAPISchema = OpenAPISchemaMetadata(type: .string, format: .dateTime)
 }
 
+extension Data: OpenAPISchema {
+    public static let openAPISchema = OpenAPISchemaMetadata(
+        type: .string,
+        format: .byte,
+        contentEncoding: .base64
+    )
+}
+
 extension Never: OpenAPISchema {
     public static let openAPISchema = OpenAPISchemaMetadata(type: .null)
 }

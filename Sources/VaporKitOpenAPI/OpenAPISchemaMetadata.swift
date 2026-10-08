@@ -25,6 +25,8 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     }
     /// An optional format refining ``type``, such as `uuid` or `int64`.
     public var format: OpenAPISchemaFormat?
+    /// The encoding applied to string content.
+    public var contentEncoding: OpenAPIContentEncoding?
     /// A human-readable explanation of the schema.
     public var description: String?
     /// Whether consumers should stop using this property.
@@ -56,6 +58,7 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     /// - Parameters:
     ///   - type: The JSON value type.
     ///   - format: An optional type format.
+    ///   - contentEncoding: The encoding applied to string content.
     ///   - description: A human-readable explanation of the schema.
     ///   - deprecated: Whether consumers should stop using the property.
     ///   - readOnly: Whether the property may appear only in responses.
@@ -72,6 +75,7 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     public init(
         type: OpenAPISchemaType? = nil,
         format: OpenAPISchemaFormat? = nil,
+        contentEncoding: OpenAPIContentEncoding? = nil,
         description: String? = nil,
         deprecated: Bool? = nil,
         readOnly: Bool? = nil,
@@ -88,6 +92,7 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     ) {
         self.types = type.map { [$0] }
         self.format = format
+        self.contentEncoding = contentEncoding
         self.description = description
         self.deprecated = deprecated
         self.readOnly = readOnly
@@ -104,7 +109,7 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case type, format, description, deprecated, readOnly, writeOnly
+        case type, format, contentEncoding, description, deprecated, readOnly, writeOnly
         case minLength, maxLength, pattern
         case items, properties, additionalProperties, anyOf, required
         case reference = "$ref"
@@ -118,6 +123,10 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
             types = try container.decodeIfPresent([OpenAPISchemaType].self, forKey: .type)
         }
         format = try container.decodeIfPresent(OpenAPISchemaFormat.self, forKey: .format)
+        contentEncoding = try container.decodeIfPresent(
+            OpenAPIContentEncoding.self,
+            forKey: .contentEncoding
+        )
         description = try container.decodeIfPresent(String.self, forKey: .description)
         deprecated = try container.decodeIfPresent(Bool.self, forKey: .deprecated)
         readOnly = try container.decodeIfPresent(Bool.self, forKey: .readOnly)
@@ -147,6 +156,7 @@ public struct OpenAPISchemaMetadata: Codable, Hashable, Sendable {
             try container.encodeIfPresent(types, forKey: .type)
         }
         try container.encodeIfPresent(format, forKey: .format)
+        try container.encodeIfPresent(contentEncoding, forKey: .contentEncoding)
         try container.encodeIfPresent(description, forKey: .description)
         try container.encodeIfPresent(deprecated, forKey: .deprecated)
         try container.encodeIfPresent(readOnly, forKey: .readOnly)
@@ -170,6 +180,7 @@ extension OpenAPISchemaMetadata {
         for modifier in modifiers {
             switch modifier {
             case .format(let format): schema.format = format
+            case .contentEncoding(let encoding): schema.contentEncoding = encoding
             case .description(let description): schema.description = description
             case .deprecated: schema.deprecated = true
             case .readOnly: schema.readOnly = true
