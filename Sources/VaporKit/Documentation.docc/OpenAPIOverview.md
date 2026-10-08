@@ -65,8 +65,37 @@ The Swift property type determines the OpenAPI `type`, nullability, and whether
 the property is required. ``OpenAPIProperty(_:)`` only adds schema annotations
 and constraints; it cannot replace the inferred type.
 
-Available modifiers include `format`, `description`, `deprecated`, `readOnly`,
-`writeOnly`, `minLength`, `maxLength`, and `pattern(regex:)`.
+Available modifiers include `format`, `contentEncoding`, `description`,
+`deprecated`, `readOnly`, `writeOnly`, `minLength`, `maxLength`, and
+`pattern(regex:)`.
+
+#### Describing Encoded Content
+
+Use `contentEncoding` when a string contains bytes encoded for transport. For
+example, this property produces `type: string` with `contentEncoding: base64`:
+
+```swift
+@OpenAPISchema
+struct SignedPayload: Content {
+    @OpenAPIProperty(.contentEncoding(.base64))
+    var signature: String
+}
+```
+
+`Data` properties already use the Base64 representation provided by their
+`Codable` conformance, so VaporKit describes them automatically with
+`format: byte` and `contentEncoding: base64`:
+
+```swift
+@OpenAPISchema
+struct Attachment: Content {
+    var contents: Data
+}
+```
+
+Use `format` to describe the value's semantic format and `contentEncoding` to
+describe how its content is encoded. They are independent OpenAPI schema
+keywords and may appear together.
 
 ### Describing Parameters
 

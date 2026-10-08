@@ -6,6 +6,7 @@ import VaporKitOpenAPI
 private struct LightweightSchemaFixture {
     var id: UUID
     var createdAt: Date
+    var payload: Data
     var labels: [String]
 }
 
@@ -16,6 +17,9 @@ private struct LightweightSchemaFixture {
         #expect(schema.properties?["id"]?.format == .uuid)
         #expect(schema.properties?["createdAt"]?.type == .string)
         #expect(schema.properties?["createdAt"]?.format == .dateTime)
+        #expect(schema.properties?["payload"]?.type == .string)
+        #expect(schema.properties?["payload"]?.format == .byte)
+        #expect(schema.properties?["payload"]?.contentEncoding == .base64)
         #expect(schema.properties?["labels"]?.type == .array)
     }
 }
